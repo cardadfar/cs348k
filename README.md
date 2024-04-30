@@ -36,6 +36,7 @@ Olivia:
 Maxton:
 
 Oscar: Goal (#4), nice-to-have (#6)
+
 Steps (#4):
 - Write a pixel-expander shader that uniformly expands segmented boundary
 - Experiment with different variable-expansion rates:
