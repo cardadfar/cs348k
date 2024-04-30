@@ -16,6 +16,8 @@ We will constrin this problem to video only, meaning we want to be able to achie
 
 ## Task List
 
+Our goal is to implement several of the following effects and focus on performance tuning.
+
 ### 1] Directional Motion Blur 
 ![IMG_2849](https://github.com/cardadfar/cs348k/assets/31673241/6cc37596-c1b6-417a-a496-6d0d8002d72b)
 ### 2] Frame Smearing
@@ -28,6 +30,30 @@ We will constrin this problem to video only, meaning we want to be able to achie
 ![image](https://github.com/cardadfar/cs348k/assets/31673241/b77aefc2-deb4-4be4-9e2e-5e7dc6512a84)
 ### 6] Sketch + Color Blotching
 ![maxresdefault](https://github.com/cardadfar/cs348k/assets/31673241/51e4c93b-8637-4c4e-9c9e-d051192fc39d)
+
+Olivia:
+
+Maxton:
+
+Oscar: Goal (#4), nice-to-have (#6)
+Steps (#4):
+- Write a pixel-expander shader that uniformly expands segmented boundary
+- Experiment with different variable-expansion rates:
+- - Set different weights at regular-grid intervals that specify how expansive each region can be.
+- - Identify sparse boundary points and tangents/normals, offset along tangents (creating implicit boundary). Perform point-in-boundary tests
+- - Use perlin noise to offset uniform boundaries to create variable boundaries
+- Tune performance:
+- - What are the least amount of memory reads needed
+- - What are the least amount of shader passes needed
+- - Do we need the entire color frame? Or can we perform equally well with compressed imput? How does quality fall off?
+ 
+Steps (#6):
+- Get OpenGL set up in the Ae SDK for line drawing
+- Identify high-contour regions to draw lines/strokes
+- Create color histogram to reduce working colorset
+- Tune performance:
+- - What are the least amount of memory reads needed
+- - What are the least amount of shader passes needed (lines, color, compositing)
 
 ## Deliverables & Evaluation
 
