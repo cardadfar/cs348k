@@ -37,7 +37,7 @@ Maxton:
 
 Oscar: Goal (#4), nice-to-have (#6)
 
-Steps (#4):
+Steps (#4): Paper Cutout
 - Write a pixel-expander shader that uniformly expands segmented boundary
 - Experiment with different variable-expansion rates:
 - - Set different weights at regular-grid intervals that specify how expansive each region can be.
@@ -48,7 +48,7 @@ Steps (#4):
 - - What are the least amount of shader passes needed
 - - Do we need the entire color frame? Or can we perform equally well with compressed imput? How does quality fall off?
  
-Steps (#6):
+Steps (#6): Sketch + Color Blotching
 - Get OpenGL set up in the Ae SDK for line drawing
 - Identify high-contour regions to draw lines/strokes
 - Create color histogram to reduce working colorset
