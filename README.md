@@ -31,7 +31,30 @@ Our goal is to implement several of the following effects and focus on performan
 ### 6] Sketch + Color Blotching
 ![maxresdefault](https://github.com/cardadfar/cs348k/assets/31673241/51e4c93b-8637-4c4e-9c9e-d051192fc39d)
 
-Olivia:
+Olivia: Goal (#1), nice-to-have (#2) 
+
+Steps (#1): Directional Motion Blur
+- Investigate and implement algorithms for optical flow and feature tracking
+- Create a WebGL interface for incorporating optical flow with shaders
+- Identify direction of blur and code shader to perform blur at specified direction
+- Experiment with varying amounts of blur:
+- - Across how many frames of video
+- - Size of filter used to obtain color for blur
+- - Length of the blur itself 
+- Tune performance:
+- - Trying to achieve speedup with optical flow algorithms
+- - What are least amount of memory reads?
+- - What are least amount shader passes needed (vertex vs. fragment) 
+
+Steps (#2): Frame smearing 
+- Utilize feature-tracking and optical flow setup from step #1
+- Identify the feature(s) to be smeared and interpolate across frames to obtain smear 
+- Experiment with varying amounts of smearing:
+- - How many features should be smeared?
+- - Should only the feature with most displacement in movement be smeared?
+- - Interpolate smear across how many frames of video
+- Tune performance:
+- - Same as #1  
 
 Maxton:
 
