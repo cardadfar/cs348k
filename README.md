@@ -1,6 +1,6 @@
 ## Project Title
 
-Stylized Shaders
+Spidervere Stylized Shaders
 
 ## Collaborators
 
