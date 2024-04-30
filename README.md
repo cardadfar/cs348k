@@ -4,7 +4,7 @@ Stylized Shaders
 
 ## Collaborators
 
-Oscar Dadfar (odadfar), Olivia Loh (pending), Maxton Huff (pending)
+Oscar Dadfar (odadfar), Olivia Loh (olivia77), Maxton Huff (maxton)
 
 ## Summary
 
