@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Spiderverse Shaders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+    <style>
+
+        body {
+          background-color: #ebebeb;
+          margin: 0;
+          font-family: Arial;
+          line-height: 25px;
+        }
+
+        .subtitle {
+            font-size: 22px;
+        }
+
+        a {
+            display: block;
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+
+        pre {
+            background-color: #ebebeb;
+            padding: 10px;
+            margin: 0;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        img {
+            margin-top: 20px;
+            margin-bottom: 0px;
+            width: 100%;
+        }
+
+        .caption {
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 14px;
+        }
+
+        .bubble {
+            display: inline-block;
+            text-align: center;
+            width: 100%;
+        }
+
+        .bubble > img {
+            display: inline-block;
+            text-align: center;
+            width: 150px;
+            margin-right: 20px;
+        }
+
+        cmt {
+            color: green;
+        }
+
+        val {
+            background-color: #ebebeb;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 5px;
+        }
+
+        .file {
+            background-color: #dbdbdb;
+            padding: 2px;
+            padding-left: 10px;
+            padding-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .block {
+            width:70%; 
+            max-width: 900px; 
+            margin-left: auto; 
+            margin-right: auto;
+            background-color: white; 
+            padding-top: 30px; 
+            padding-left: 20px; 
+            padding-right: 20px; 
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+    </style>
+
+    <div class=block>
+
+    
+    <div class=subtitle>Spider-Verse: Beyond the Spider-Shaders</div>
+    <p>Stylistic NPR Shaders for Everyday Video.</p>
+
+    <div class="bubble">
+        <img src="assets/mini_01.gif">
+        <img src="assets/mini_02.gif">
+        <img src="assets/mini_03.gif">
+    </div>
+
+    </div>
+
+    <div class=block>
+
+
+    <div class=subtitle>Table Of Contents</div>
+
+    <a href=#background>Background</a>
+    <a href=#approach-paper-expand>Approach [Paper Expand]</a>
+    <a href=#experiments-paper-expand>Experiments [Paper Expand]</a>
+    <a href=#responsibilities>Responsibilities</a>
+
+    </div>
+
+    <div class=block>
+    <div class=subtitle id=background>Background</div>
+    <p>
+        The Spiderverse series is ubiquitous in both the computer graphics and entertainment industry for sparking interest in non-photorealistic rendering. Yet the common question a lot of creators ask is “how can I capture the Spiderverse effect in my animations” or “how can I make my live-action video look like Spiderverse”. In this paper, we aim to write a set of shaders, known as ‘SpiderShaders’ for which draw inspiration from the SpiderVerse style that any artist or videographer can use on their animation or footage. Specifically, this paper investigates three specific effects: motion blur, RGB glitch, and paper expand.
+    </p>
+    <p>
+        Since we aim to create shaders that can be applied to any video footage, whether animation or real-life, we limit our inputs to just the 2D video footage. While many of the original Spiderverse effects were done in 3D, we cannot assume every editor has time to construct an accurate depth map of their footage, so our shader aims to be as accurate as possible while limited to 2D. Additionally, the motion blur effect also requires the optical flow map, which most video editing software can compute nowadays via sparse/dense tracking. We will not be writing an optical flow compute node in our work, but will rather be using footage found online with relevant optical flow data. The outputs will be a stylized 2D footage result depending on the shader used.
+    </p>
+    <p>
+        Our constraints are that our shaders must run on conventional laptop hardware. We demonstrate that most of our shaders can run as After Effects plug-ins and scripts, ensuring that devices that meet the minimum hardware requirements of After Effects can run our filters without substantial time or compute resources. We do not provide a specific performance goal, but rather aim to minimize the compute time as much as possible. As we will discuss later in the paper, one key way of doing so is keeping memory accesses to a minimum, as most of our shaders are memory-bound.
+    </p>
+    <p>
+        Our goal is to be able to faithfully reconstruct many of the Spiderverse filters in a performant way that can be operated on lower-dimensional 2D footage without substantial loss of quality. The hard part of this project is in how open-ended it is. Because there is no benchmark or testing suite, we have to create our own metric of how well we did. The details of this metric will be presented below.
+    </p>
+    </div>
+
+    <div class=block>
+    <div class=subtitle id=approach-paper-expand>Approach [Paper Expand]</div>
+
+    <img src="assets/hobbes_intro.png">
+    <div class=caption>Fig 1. Introduction of Hobbes | Across the Spiderverse (2023)</div>
+
+    <p>
+        The paper expand effect, in its most basic form, is a course-resolution (few points) expand filter around the edges used to give a punk-rock style in SpiderVerse (Fig 1). The input to this filter is a video of a masked object, which can be provided in one of two ways: as a mask (vector) or as a rotoscope (raster) (Fig 2). 
+    </p>
+
+    <img src="assets/rotoscoped.png">
+    <div class=caption>Fig 2. Rotoscope [Left] and Mask [Right] | Across the Spiderverse (2023)</div>
+
+    <p>
+        A mask is a lot more trivial to work with: sample a random (ideally sparse) set of points along the mask, extrude them via normal approximation of neighboring points, and create a shape layer from the resulting points. Yet most videographers do not use masks for video because masks track and adapt very poorly to non-rigid deformations such as head and body turns. We instead focus on rotoscoped footage for this filter.  
+    </p>
+
+    <pre>
+    pts = init(); <cmt>// Walk comp bbox, evenly create N points</cmt>
+    for(f=0; f&ltnFrames; f++) {
+        <cmt>// Subdivide consecutive points that are far</cmt>
+        <cmt>// Simplify (merge) consecutive points that are too close</cmt>
+        remesh(pts);
+        <cmt>// While point in raster, take a step backwards</cmt>
+        step_back(pts);
+        <cmt>// While point not in raster, take a step forward</cmt>
+        <cmt>// On termination, revert a step</cmt>
+        step_forward(pts);
+        <cmt>// Construct a keyframed shape object out of the points</cmt>
+        generate(pts);
+    }</pre>
+    <div class=caption>Alg 1. Paper Cutout Loop</div>
+
+    <p>
+        Our algorithm consists of an initialization step followed by 4 steps repeated per frame. During our remeshing operation, we subdivide and simplify points if they are greater or less than a constant proportional to the composition area. When the algorithm steps forward or backwards, the step size is also relative to the composition area so that different resolutions terminate in approximately the same steps. Stepping forward uses a decaying step size.
+    </p>
+    <p>
+        We implement the filter via After Effect’s scripting language JSX (javascript expressions). Our filter requires periodic lookups into the raster mask, but because JSX does not have any way to access layer pixels, we instead create a text later and schedule a pixel lookup via the layer expression’s built in sampleImage function, reporting the value back as a text value that can be read in by JSX.
+    </p>
+    <p>
+        JSX cannot be linked with other libraries or frameworks, so we were unable to try any loop-level parallelism.  
+    </p>
+    </div>
+
+    <div class=block>
+    <div class=subtitle id=experiments-paper-expand>Experiments [Paper Expand]</div>
+
+    <p>
+        We parameterize the filter with the following values:
+        <ul>
+            <li>Points: number of points. Can change with remeshing step</li>
+            <li>Iterations: number of iterations Step Forward</li>
+            <li>Frameskip: paper effect is recomputed every x frames</li>
+            <li>Radius: the 'thickness' of the paper around the subject</li>
+        </ul>
+    </p>
+    <p>
+        Script v4 introduces the remeshing step as well as point re-use between frames, while script v1 initializes and optimizes a new point list each iteration. In benchmarking performance (Tab 1), we find that increasing the number of points does not affect v4 as much, mainly due to point re-use. Increasing the resolution also does not affect performance for both scripts since step sizes are proportional to composition area. Interestingly enough, changing the radius does not affect performance much for both scripts. This is because the sampleImage function used to access memory supports a radius parameter, so we can still execute calls to our paper extend effect with different radius parameters and still make the same number of calls to sampleImage. Calling sampleImage with a radius of 1 or a radius of 100 does not make much of a performance difference to After Effects, and it shows in our results. 
+    </p>
+
+    <img src="assets/paper_table.png">
+    <div class=caption>Tab 1. Performance of paper cutout averaged over 5 trials</div>
+
+    <img src="assets/spiderman_01.gif">
+    <div class=caption>Res 1. Hobbes With paper overlay #1 | Across the Spiderverse (2023)</div>
+    <img src="assets/spiderman_02.gif">
+    <div class=caption>Res 2. Hobbes With paper overlay #1 | Across the Spiderverse (2023)</div>
+
+    <p>
+        We ran our effect on several pieces of footage, two from Spiderverse (Res 1. & 2.) and two live-action (Res 3. & 4.). We rotoscoped the object of interest in After Effects and ran the v4 script. In most cases, we found that reducing the framerate to 12fps (animating on 2s) produced more interesting stylized results.
+    </p>
+    
+    <img src="assets/dancing.gif">
+    <div class=caption>Res 3. Full-body rapid movement subjects</div>
+
+        For (Res 4.) we experimented with how the paper extend effect can be used in the VFX pipeline. By combining it with color-burn grunge textures, hue offsets, and exaggerated edge filters all confined to the paper bounds, we are able to create even more stylistic effects on real-life footage that better replicate the SpiderVerse NPR effect.
+
+    <img src="assets/suit.gif">
+    <div class=caption>Res 4. Paper expand [Left] and full composite [Right]</div>
+
+    </div>
+
+</body>
+</html>

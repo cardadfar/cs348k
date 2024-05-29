@@ -3,6 +3,7 @@
 #include v3.jsx
 #include v4.jsx
 
+
 (function (thisObj) {
     expressionPanel(thisObj);
     var applyBtn;
@@ -56,8 +57,8 @@
 		numPointsSliderText.characters = 4;
 
 		numPointsSliderValue.onChanging = function() {
-		        numPointsSliderText.text = Math.floor(numPointsSliderValue.value);
-		    }
+            numPointsSliderText.text = Math.floor(numPointsSliderValue.value);
+        }
 
         var numItersSliderGroup = tabOne.add('group', undefined, 'numItersSliderGroup');
         //numItersSliderGroup.orientation = "row";
@@ -70,8 +71,36 @@
 		numItersSliderText.characters = 4;
 
 		numItersSliderValue.onChanging = function() {
-		        numItersSliderText.text = Math.floor(numItersSliderValue.value);
-		    }
+            numItersSliderText.text = Math.floor(numItersSliderValue.value);
+        }
+
+        var frameSkipSliderGroup = tabOne.add('group', undefined, 'frameSkipGroup');
+        //frameSkipSliderGroup.orientation = "row";
+		frameSkipSliderGroup.add("statictext", undefined, "frameSkip");
+		var frameSkipSliderValue = frameSkipSliderGroup.add("slider", undefined, "");
+		frameSkipSliderValue.minvalue = 1;
+		frameSkipSliderValue.maxvalue = 24;
+		frameSkipSliderValue.value = 1;
+		var frameSkipSliderText = frameSkipSliderGroup.add("statictext", undefined, "1");
+		frameSkipSliderText.characters = 4;
+
+		frameSkipSliderValue.onChanging = function() {
+            frameSkipSliderText.text = Math.floor(frameSkipSliderValue.value);
+		}
+
+        var radiusSliderGroup = tabOne.add('group', undefined, 'radiusGroup');
+        //radiusSliderGroup.orientation = "row";
+		radiusSliderGroup.add("statictext", undefined, "radius");
+		var radiusSliderValue = radiusSliderGroup.add("slider", undefined, "");
+		radiusSliderValue.minvalue = 1;
+		radiusSliderValue.maxvalue = 300;
+		radiusSliderValue.value = 40;
+		var radiusSliderText = radiusSliderGroup.add("statictext", undefined, "40");
+		radiusSliderText.characters = 4;
+
+		radiusSliderValue.onChanging = function() {
+            radiusSliderText.text = Math.floor(radiusSliderValue.value);
+		}
 
         // -- Tab Two --
         var tabTwo = tabPanel.add('tab', undefined, 'Custom Expression');
@@ -89,12 +118,14 @@
         	var fnType = expressionDropdown.selection.text;
         	var nPts = Math.floor(numPointsSliderValue.value);
         	var nIters = Math.floor(numItersSliderValue.value);
+        	var frameSkip = Math.floor(frameSkipSliderValue.value);
+        	var radius = Math.floor(radiusSliderValue.value);
         	var useWorkArea = useWorkAreaBox.value;
 
             var startTime = new Date();
 
             if(fnType == "v4") {
-                v4(useWorkArea, nPts, nIters);
+                v4(useWorkArea, nPts, nIters, frameSkip, radius);
             }
             else if(fnType == "v3") {
             	v3(useWorkArea, nPts, nIters);

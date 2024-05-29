@@ -1,4 +1,4 @@
-function v4(useWorkArea, nPts, nIters) {
+function v4(useWorkArea, nPts, nIters, frameSkip, radius) {
 
 	var comp = app.project.activeItem;
 
@@ -83,7 +83,7 @@ function v4(useWorkArea, nPts, nIters) {
 		pts.push([x,y]);
 	}
 
-	var r = 40;
+	var r = radius;
 	comp.time = fStart;
 	var fNum = 1;
 	var minDst = w * h / 200;
@@ -170,7 +170,7 @@ function v4(useWorkArea, nPts, nIters) {
 		shapeGroup.property(1).property("ADBE Vector Shape").setValueAtTime(comp.time, shape);
 		shapeGroup.property(1).property("ADBE Vector Shape").setInterpolationTypeAtKey(fNum, KeyframeInterpolationType.HOLD);
 
-		comp.time += df;
+		comp.time += frameSkip * df;
 		fNum++;
 	}
 }
