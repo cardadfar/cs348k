@@ -78,12 +78,12 @@ enum {
 	SKELETON_INPUT = 0,
 	SKELETON_GAIN,
     SKELETON_LAYER,
-	SKELETON_NUM_PARAMS
+    SKELETON_NUM_PARAMS
 };
 
 enum {
 	GAIN_DISK_ID = 1,
-    LAYER_DISK_ID = 1,
+    LAYER_DISK_ID,
 };
 
 typedef struct GainInfo{
