@@ -59,6 +59,7 @@ typedef short int			int16;
 
 #include "Skeleton_Strings.h"
 
+#include <algorithm>
 /* Versioning information */
 
 #define	MAJOR_VERSION	1

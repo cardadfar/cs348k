@@ -130,15 +130,108 @@ MySimpleGainFunc8 (
     PF_LayerDef layer = giP->checkout.u.ld;
     PF_Pixel8 *p = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + (xL * sizeof(PF_Pixel)));
     
-    if(xL < layer.width / 2) {
+    /*if (p->red > 100)
+    {
         p = inP;
+    }*/
+    
+    float in_red = static_cast<float>(inP->red) / 255.0f;
+    float in_blue = static_cast<float>(inP->blue) / 255.0f;
+    float in_green = static_cast<float>(inP->green) / 255.0f;
+    
+    float cmax = std::max(in_red, std::max(in_green, in_blue)); // maximum of r, g, b
+    float cmin = std::min(in_red, std::min(in_green, in_blue)); // minimum of r, g, b
+    float diff = cmax - cmin; // diff of cmax and cmin.
+    float hue = -1;
+      
+    // if cmax and cmax are equal then h = 0
+    if (cmax == cmin)
+        hue = 0;
+  
+    // if cmax equal r then compute h
+    else if (cmax == in_red)
+        hue = fmod(60 * ((in_green - in_blue) / diff) + 360, 360);
+  
+    // if cmax equal g then compute h
+    else if (cmax == in_green)
+        hue = fmod(60 * ((in_blue - in_red) / diff) + 120, 360);
+  
+    // if cmax equal b then compute h
+    else if (cmax == in_blue)
+        hue = fmod(60 * ((in_red - in_green) / diff) + 240, 360);
+  
+    // compute v
+    float value = cmax * 100;
+    
+    if (value > 10)
+    {
+        // Number of samples for the horizontal blur
+        int numSamples = 10;
+        
+        // Total weight for normalization
+        float totalWeight = 0.0;
+        
+        // Accumulate color
+        float red = static_cast<float>(p->red) / 255.0f;
+        float green = static_cast<float>(p->green) / 255.0f;
+        float blue = static_cast<float>(p->blue) / 255.0f;
+        float alpha = static_cast<float>(p->alpha) / 255.0f;
+        
+        // Spacing between samples for thicker lines
+        float sampleSpacing = 0.03;  // Adjust this value for thicker or thinner lines
+        
+        // Loop to sample multiple points along the horizontal axis
+        for (int i = -numSamples; i <= numSamples; ++i)
+        {
+            // Calculate the offset
+            float offset = static_cast<float>(i) * sampleSpacing;
+            
+            A_long dist = static_cast<A_long>(std::fmin(offset * 255.0f, 255.0f));
+            
+            if (xL + dist > layer.width)
+                dist = 0;
+            if (xL + dist < 0)
+                dist = 0;
+            
+            // Sample the texture at the offset position
+            PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + ((xL+ dist) * sizeof(PF_Pixel)));
+            
+            // Calculate the weight based on the distance from the center
+            float weight = 1.0 - abs(float(i) / float(numSamples));
+            
+            // Accumulate the color and weight
+            red += static_cast<float>(samp->red) / 255.0f * weight;
+            green += static_cast<float>(samp->green) / 255.0f * weight;
+            blue += static_cast<float>(samp->blue) / 255.0f * weight;
+            alpha += static_cast<float>(samp->alpha) / 255.0f * weight;
+            
+            totalWeight += weight;
+        }
+        // Normalize the accumulated color
+        alpha /= totalWeight;
+        red /= totalWeight;
+        green /= totalWeight;
+        blue /= totalWeight;
+        
+        
+        A_u_char color_r = static_cast<A_u_char>(std::fmin(red * 255.0f, 255.0f));
+        A_u_char color_g = static_cast<A_u_char>(std::fmin(green * 255.0f, 255.0f));
+        A_u_char color_b = static_cast<A_u_char>(std::fmin(blue * 255.0f, 255.0f));
+        A_u_char color_a = static_cast<A_u_char>(std::fmin(alpha * 255.0f, 255.0f));
+        
+        outP->alpha = color_a;
+        outP->red = color_r;
+        outP->green = color_g;
+        outP->blue = color_b;
+    }
+    else
+    {
+        outP->alpha = p->alpha;
+        outP->red = p->red;
+        outP->green = p->green;
+        outP->blue = p->blue;
     }
     
-    outP->alpha		=	p->alpha;
-    outP->red		=	p->red;
-    outP->green		=	p->green;
-    outP->blue		=	p->blue;
-
 	return err;
 }
 
