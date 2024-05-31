@@ -161,12 +161,16 @@ MySimpleGainFunc8 (
         hue = fmod(60 * ((in_red - in_green) / diff) + 240, 360);
   
     // compute v
-    float value = cmax * 100;
+    float value = cmax * 10;
     
-    if (value > 10)
+    float x_dir = value * sin(value);
+    float y_dir = value * cos(value);
+    
+    if (value > 5)
     {
         // Number of samples for the horizontal blur
-        int numSamples = 10;
+        int numSamples_x = static_cast<float>(x_dir);
+        int numpSamples_y = static_cast<float>(y_dir);
         
         // Total weight for normalization
         float totalWeight = 0.0;
@@ -180,32 +184,43 @@ MySimpleGainFunc8 (
         // Spacing between samples for thicker lines
         float sampleSpacing = 0.03;  // Adjust this value for thicker or thinner lines
         
-        // Loop to sample multiple points along the horizontal axis
-        for (int i = -numSamples; i <= numSamples; ++i)
+        // Loop to sample multiple points
+        for (int i = 0; i <= numSamples_x; ++i)
         {
-            // Calculate the offset
-            float offset = static_cast<float>(i) * sampleSpacing;
-            
-            A_long dist = static_cast<A_long>(std::fmin(offset * 255.0f, 255.0f));
-            
-            if (xL + dist > layer.width)
-                dist = 0;
-            if (xL + dist < 0)
-                dist = 0;
-            
-            // Sample the texture at the offset position
-            PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + ((xL+ dist) * sizeof(PF_Pixel)));
-            
-            // Calculate the weight based on the distance from the center
-            float weight = 1.0 - abs(float(i) / float(numSamples));
-            
-            // Accumulate the color and weight
-            red += static_cast<float>(samp->red) / 255.0f * weight;
-            green += static_cast<float>(samp->green) / 255.0f * weight;
-            blue += static_cast<float>(samp->blue) / 255.0f * weight;
-            alpha += static_cast<float>(samp->alpha) / 255.0f * weight;
-            
-            totalWeight += weight;
+            for (int j = 0; j <= numpSamples_y; j++)
+            {
+                // Calculate the offset
+                float offset_x = static_cast<float>(i) * sampleSpacing;
+                float offset_y = static_cast<float>(j) * sampleSpacing;
+                
+                A_long dist_x = static_cast<A_long>(std::fmin(offset_x * 255.0f, 255.0f));
+                
+                if (xL + dist_x > layer.width)
+                    dist_x = 0;
+                if (xL + dist_x < 0)
+                    dist_x = 0;
+                
+                A_long dist_y = static_cast<A_long>(std::fmin(offset_y * 255.0f, 255.0f));
+                
+                if (yL + dist_y > layer.width)
+                    dist_x = 0;
+                if (yL + dist_y < 0)
+                    dist_x = 0;
+                
+                // Sample the texture at the offset position
+                PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + ((yL +dist_y) * (layer).rowbytes) + ((xL+ dist_x) * sizeof(PF_Pixel)));
+                
+                // Calculate the weight based on the distance from the center
+                //float weight = 1.0 - abs(float(i) / float(numSamples_x));
+                
+                // Accumulate the color and weight
+                red += static_cast<float>(samp->red) / 255.0f; // * weight;
+                green += static_cast<float>(samp->green) / 255.0f; // * weight;
+                blue += static_cast<float>(samp->blue) / 255.0f; //* weight;
+                alpha += static_cast<float>(samp->alpha) / 255.0f; //* weight;
+                
+                totalWeight += 1;
+            }
         }
         // Normalize the accumulated color
         alpha /= totalWeight;
