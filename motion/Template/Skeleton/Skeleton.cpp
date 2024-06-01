@@ -169,7 +169,7 @@ MySimpleGainFunc8 (
     float y_velocity = value * cos(hue*PI/180) * blurScale;
     
     // sample scene texture along direction of motion
-    const float samples = 5;
+    const float samples = 2;
     const float w = 1.0 / samples; // sample weight
     
     float red = 0;
@@ -180,20 +180,20 @@ MySimpleGainFunc8 (
         float t = i / (samples-1);
         
         A_long x_offset = static_cast<float>(floor(x_velocity*t*layer.width));
-        A_long y_offset = static_cast<float>(floor(y_velocity*t*layer.height));
+        //A_long y_offset = 0; //static_cast<float>(floor(y_velocity*t*layer.height));
         
-        if (xL + x_offset > layer.width || xL + x_offset < layer.width)
+        if (xL + x_offset >= layer.width || xL + x_offset <= 0)
             x_offset = 0;
         
-        if (yL + y_offset > layer.height || xL + x_offset < layer.height)
-            y_offset = 0;
+        //if (yL + y_offset >= layer.height || xL + x_offset <= 0)
+        //    y_offset = 0;
         
         PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + ((yL+y_offset) * (layer).rowbytes) + ((xL+x_offset) * sizeof(PF_Pixel)));
         
-        red += samp->red * w;
-        blue += samp->blue * w;
-        green += samp->green * w;
-        
+        red += (static_cast<float>(samp->red) / 255.0f) * w;
+        blue += (static_cast<float>(samp->blue) / 255.0f) * w;
+        green += (static_cast<float>(samp->green) / 255.0f) * w;
+
     }
 
     
