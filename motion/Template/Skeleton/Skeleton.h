@@ -39,6 +39,8 @@ typedef short int			int16;
 #define PF_DEEP_COLOR_AWARE 1	// make sure we get 16bpc pixels; 
 								// AE_Effect.h checks for this.
 
+#define PI 3.14159265
+
 #include "AEConfig.h"
 
 #ifdef AE_OS_WIN

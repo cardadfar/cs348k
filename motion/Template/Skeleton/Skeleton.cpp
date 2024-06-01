@@ -161,16 +161,39 @@ MySimpleGainFunc8 (
         hue = fmod(60 * ((in_red - in_green) / diff) + 240, 360);
   
     // compute v
-    float value = cmax * 10;
+    float value = cmax * 100;
     
-    float x_dir = value * sin(value);
-    float y_dir = value * cos(value);
+    float x_dir = value * sin(hue*PI/180);
+    float y_dir = value * cos(hue*PI/180);
     
-    if (value > 5)
+    if (value > 90)
     {
         // Number of samples for the horizontal blur
-        int numSamples_x = static_cast<float>(x_dir);
-        int numpSamples_y = static_cast<float>(y_dir);
+        int numSamples_x_start;
+        int numSamples_y_start;
+        int numSamples_x_end;
+        int numSamples_y_end;
+        
+        if (x_dir > 0)
+        {
+            numSamples_x_start = 0;
+            numSamples_x_end = static_cast<float>(floor(x_dir));
+        }
+        else
+        {
+            numSamples_x_start = static_cast<float>(floor(x_dir));
+            numSamples_x_end = 0;
+        }
+        if (y_dir > 0)
+        {
+            numSamples_y_start = 0;
+            numSamples_y_end = static_cast<float>(floor(y_dir));
+        }
+        else
+        {
+            numSamples_y_start = static_cast<float>(floor(y_dir));
+            numSamples_y_end = 0;
+        }
         
         // Total weight for normalization
         float totalWeight = 0.0;
@@ -179,15 +202,14 @@ MySimpleGainFunc8 (
         float red = static_cast<float>(p->red) / 255.0f;
         float green = static_cast<float>(p->green) / 255.0f;
         float blue = static_cast<float>(p->blue) / 255.0f;
-        float alpha = static_cast<float>(p->alpha) / 255.0f;
         
         // Spacing between samples for thicker lines
         float sampleSpacing = 0.03;  // Adjust this value for thicker or thinner lines
         
         // Loop to sample multiple points
-        for (int i = 0; i <= numSamples_x; ++i)
+        for (int i = numSamples_x_start; i <= numSamples_x_end; ++i)
         {
-            for (int j = 0; j <= numpSamples_y; j++)
+            for (int j = numSamples_y_start; j <= numSamples_y_end; ++j)
             {
                 // Calculate the offset
                 float offset_x = static_cast<float>(i) * sampleSpacing;
@@ -195,7 +217,7 @@ MySimpleGainFunc8 (
                 
                 A_long dist_x = static_cast<A_long>(std::fmin(offset_x * 255.0f, 255.0f));
                 
-                if (xL + dist_x > layer.width)
+                if ((xL + dist_x) > layer.width || (xL + dist_x) < 0)
                     dist_x = 0;
                 if (xL + dist_x < 0)
                     dist_x = 0;
@@ -217,13 +239,11 @@ MySimpleGainFunc8 (
                 red += static_cast<float>(samp->red) / 255.0f; // * weight;
                 green += static_cast<float>(samp->green) / 255.0f; // * weight;
                 blue += static_cast<float>(samp->blue) / 255.0f; //* weight;
-                alpha += static_cast<float>(samp->alpha) / 255.0f; //* weight;
                 
                 totalWeight += 1;
             }
         }
         // Normalize the accumulated color
-        alpha /= totalWeight;
         red /= totalWeight;
         green /= totalWeight;
         blue /= totalWeight;
@@ -232,9 +252,8 @@ MySimpleGainFunc8 (
         A_u_char color_r = static_cast<A_u_char>(std::fmin(red * 255.0f, 255.0f));
         A_u_char color_g = static_cast<A_u_char>(std::fmin(green * 255.0f, 255.0f));
         A_u_char color_b = static_cast<A_u_char>(std::fmin(blue * 255.0f, 255.0f));
-        A_u_char color_a = static_cast<A_u_char>(std::fmin(alpha * 255.0f, 255.0f));
         
-        outP->alpha = color_a;
+        outP->alpha = p->alpha;
         outP->red = color_r;
         outP->green = color_g;
         outP->blue = color_b;
