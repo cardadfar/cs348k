@@ -161,9 +161,9 @@ MySimpleGainFunc8 (
         hue = fmod(60 * ((in_red - in_green) / diff) + 240, 360);
   
     // compute v
-    float value = cmax * 100;
+    float value = cmax;
     
-    float blurScale = 5.0;
+    float blurScale = 0.1;
     
     float x_velocity = value * sin(hue*PI/180);
     float y_velocity = value * cos(hue*PI/180);
@@ -175,6 +175,7 @@ MySimpleGainFunc8 (
     float red = 0;
     float green = 0;
     float blue = 0;
+    float alpha = 0;
     
     for(float i=0; i<samples; i++) {
         float t = i / (samples-1);
@@ -190,19 +191,22 @@ MySimpleGainFunc8 (
         red += (static_cast<float>(samp->red) / 255.0f);
         blue += (static_cast<float>(samp->blue) / 255.0f);
         green += (static_cast<float>(samp->green) / 255.0f);
+        alpha += (static_cast<float>(samp->alpha) / 255.0f);
         
     }
     red/= samples;
     blue/= samples;
     green/= samples;
+    alpha/=samples;
     
-    outP->alpha = p->alpha;
-    outP->red = p->red; //static_cast<A_u_char>(std::min((red * 255.0), 255.0));
-    outP->green = p->green; //static_cast<A_u_char>(std::min((green * 255.0), 255.0));
-    outP->blue = p->blue;//static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
+    outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
+    outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
+    outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
+    outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
 
     
 	return err;
+        
 }
 
 static PF_Err 
