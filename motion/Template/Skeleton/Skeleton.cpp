@@ -92,49 +92,38 @@ ParamsSetup (
 
 	AEFX_CLR_STRUCT(def);
 
-	PF_ADD_FLOAT_SLIDERX(	STR(StrID_Gain_Param_Name), 
-							SKELETON_GAIN_MIN, 
-							SKELETON_GAIN_MAX, 
-							SKELETON_GAIN_MIN, 
-							SKELETON_GAIN_MAX, 
-							SKELETON_GAIN_DFLT,
-							PF_Precision_INTEGER,
-							0,
-							0,
-							GAIN_DISK_ID);
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Gain_Param_Name),
+                            SKELETON_GAIN_MIN,
+                            SKELETON_GAIN_MAX,
+                            SKELETON_GAIN_MIN,
+                            SKELETON_GAIN_MAX,
+                            SKELETON_GAIN_DFLT,
+                            PF_Precision_INTEGER,
+                            0,
+                            0,
+                            GAIN_DISK_ID);
     
-    PF_ADD_FLOAT_SLIDERX(    STR(StrID_Scale_Param_Name),
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Scale_Param_Name),
                             SKELETON_SCALE_MIN,
                             SKELETON_SCALE_MAX,
                             SKELETON_SCALE_MIN,
                             SKELETON_SCALE_MAX,
                             SKELETON_SCALE_DFLT,
-                            PF_Precision_HUNDREDTHS,
+                            PF_Precision_TEN_THOUSANDTHS,
                             0,
                             0,
                             SCALE_DISK_ID);
     
-    PF_ADD_FLOAT_SLIDERX(    STR(StrID_CropX_Param_Name),
-                            SKELETON_CROP_MIN,
-                            SKELETON_CROP_MAX,
-                            SKELETON_CROP_MIN,
-                            SKELETON_CROP_MAX,
-                            SKELETON_CROP_DFLT,
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Threshold_Param_Name),
+                            SKELETON_THRESHOLD_MIN,
+                            SKELETON_THRESHOLD_MAX,
+                            SKELETON_THRESHOLD_MIN,
+                            SKELETON_THRESHOLD_MAX,
+                            SKELETON_THRESHOLD_DFLT,
                             PF_Precision_TEN_THOUSANDTHS,
                             0,
                             0,
-                            CROPX_DISK_ID);
-    
-    PF_ADD_FLOAT_SLIDERX(    STR(StrID_CropY_Param_Name),
-                            SKELETON_CROP_MIN,
-                            SKELETON_CROP_MAX,
-                            SKELETON_CROP_MIN,
-                            SKELETON_CROP_MAX,
-                            SKELETON_CROP_DFLT,
-                            PF_Precision_TEN_THOUSANDTHS,
-                            0,
-                            0,
-                            CROPY_DISK_ID);
+                            THRESHOLD_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
     
@@ -162,11 +151,10 @@ MySimpleGainFunc8 (
     // checkout (x,y) pixel from src layer
     PF_LayerDef layer = giP->checkout.u.ld;
     
-    PF_FpLong sampleValue = giP->gainF;
-    PF_FpLong scaleValue = giP->scaleF;
     
-    float cropXOffsetValue = giP->cropXOffsetF;
-    float cropYOffsetValue = giP->cropYOffsetF;
+    PF_FpLong gainValue = giP->gainF;
+    PF_FpLong scaleValue = giP->scaleF;
+    PF_FpLong thresholdValue = giP->thresholdF;
     
     PF_Pixel8 *p = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + (xL * sizeof(PF_Pixel)));
     
@@ -199,25 +187,24 @@ MySimpleGainFunc8 (
     // compute v
     float value = cmax;
     
-    float blurScale = static_cast<float>(scaleValue);
+    const float blurScale = static_cast<float>(scaleValue);
+    const float samples = static_cast<float>(gainValue);
+    const float threshold = static_cast<float>(thresholdValue);
+    
     
     float x_velocity = value * sin(hue*PI/180);
     float y_velocity = value * cos(hue*PI/180);
     
 
     // sample scene texture along direction of motion
-    const float samples = static_cast<float>(sampleValue);
     
     float red = 0;
     float green = 0;
     float blue = 0;
     float alpha = 0;
     
-    A_long crop_x = static_cast<A_long>(round(cropXOffsetValue*layer.width));
-    A_long crop_y = static_cast<A_long>(round(cropYOffsetValue*layer.height));
     
-    
-    if ((xL > crop_x || xL <= layer.width-crop_x) && (yL > crop_y || yL <= layer.width-crop_y))
+    if (value > threshold)
     {
         for(float i=0; i<samples; i++) {
             float t = i / (samples-1);
@@ -225,8 +212,8 @@ MySimpleGainFunc8 (
             A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
             A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
             
-            A_long coord_x = std::min(std::max(0+crop_x, xL + x_offset),layer.width-crop_x-1);
-            A_long coord_y = std::min(std::max(0+crop_y, yL + y_offset),layer.height-crop_y-1);
+            A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
+            A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
             
             PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
             
@@ -286,8 +273,7 @@ Render (
 	linesL 		   = output->extent_hint.bottom - output->extent_hint.top;
 	giP.gainF 	   = params[SKELETON_GAIN]->u.fs_d.value;
     giP.scaleF     = params[SKELETON_SCALE]->u.fs_d.value;
-    giP.cropXOffsetF = params[SKELETON_CROP_X]->u.fs_d.value;
-    giP.cropYOffsetF = params[SKELETON_CROP_Y]->u.fs_d.value;
+    giP.thresholdF = params[SKELETON_THRESHOLD]->u.fs_d.value;
     
     giP.checkout   = checkout;
 	

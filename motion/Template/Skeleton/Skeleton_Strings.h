@@ -27,7 +27,6 @@ typedef enum {
 	StrID_Description,
 	StrID_Gain_Param_Name,
     StrID_Scale_Param_Name,
-    StrID_CropX_Param_Name,
-    StrID_CropY_Param_Name,
+    StrID_Threshold_Param_Name,
 	StrID_NUMTYPES
 } StrIDType;
