@@ -163,7 +163,7 @@ MySimpleGainFunc8 (
     // compute v
     float value = cmax;
     
-    float blurScale = 0.1;
+    float blurScale = 0.2;
     
     float x_velocity = value * sin(hue*PI/180);
     float y_velocity = value * cos(hue*PI/180);
@@ -177,33 +177,42 @@ MySimpleGainFunc8 (
     float blue = 0;
     float alpha = 0;
     
-    for(float i=0; i<samples; i++) {
-        float t = i / (samples-1);
+    if (value > 0)
+    {
+        for(float i=0; i<samples; i++) {
+            float t = i / (samples-1);
+            
+            A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
+            A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
+            
+            A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
+            A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
+            
+            PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
+            
+            red += (static_cast<float>(samp->red) / 255.0f);
+            blue += (static_cast<float>(samp->blue) / 255.0f);
+            green += (static_cast<float>(samp->green) / 255.0f);
+            alpha += (static_cast<float>(samp->alpha) / 255.0f);
+            
+        }
+        red/= samples;
+        blue/= samples;
+        green/= samples;
+        alpha/=samples;
         
-        A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
-        A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
-        
-        A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
-        A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
-        
-        PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
-        
-        red += (static_cast<float>(samp->red) / 255.0f);
-        blue += (static_cast<float>(samp->blue) / 255.0f);
-        green += (static_cast<float>(samp->green) / 255.0f);
-        alpha += (static_cast<float>(samp->alpha) / 255.0f);
-        
+        outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
+        outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
+        outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
+        outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
     }
-    red/= samples;
-    blue/= samples;
-    green/= samples;
-    alpha/=samples;
-    
-    outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
-    outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
-    outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
-    outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
-
+    else
+    {
+        outP->alpha = p->alpha;
+        outP->red = p->red;
+        outP->green = p->green;
+        outP->blue = p->blue;
+    }
     
 	return err;
         
