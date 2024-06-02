@@ -73,13 +73,24 @@ typedef short int			int16;
 
 /* Parameter defaults */
 
-#define	SKELETON_GAIN_MIN		0
-#define	SKELETON_GAIN_MAX		100
-#define	SKELETON_GAIN_DFLT		10
+#define	SKELETON_GAIN_MIN		1
+#define	SKELETON_GAIN_MAX		20
+#define	SKELETON_GAIN_DFLT      5
+
+#define SKELETON_SCALE_MIN      0
+#define SKELETON_SCALE_MAX      1
+#define SKELETON_SCALE_DFLT     0.2
+
+#define SKELETON_CROP_MIN      0
+#define SKELETON_CROP_MAX      0.5
+#define SKELETON_CROP_DFLT     0
 
 enum {
 	SKELETON_INPUT = 0,
 	SKELETON_GAIN,
+    SKELETON_SCALE,
+    SKELETON_CROP_X,
+    SKELETON_CROP_Y,
     SKELETON_LAYER,
     SKELETON_NUM_PARAMS
 };
@@ -87,10 +98,16 @@ enum {
 enum {
 	GAIN_DISK_ID = 1,
     LAYER_DISK_ID,
+    SCALE_DISK_ID,
+    CROPX_DISK_ID,
+    CROPY_DISK_ID
 };
 
 typedef struct GainInfo{
 	PF_FpLong	gainF;
+    PF_FpLong   scaleF;
+    PF_FpLong   cropXOffsetF;
+    PF_FpLong   cropYOffsetF;
     PF_ParamDef checkout;
 } GainInfo, *GainInfoP, **GainInfoH;
 

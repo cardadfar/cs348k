@@ -98,10 +98,43 @@ ParamsSetup (
 							SKELETON_GAIN_MIN, 
 							SKELETON_GAIN_MAX, 
 							SKELETON_GAIN_DFLT,
-							PF_Precision_HUNDREDTHS,
+							PF_Precision_INTEGER,
 							0,
 							0,
 							GAIN_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(    STR(StrID_Scale_Param_Name),
+                            SKELETON_SCALE_MIN,
+                            SKELETON_SCALE_MAX,
+                            SKELETON_SCALE_MIN,
+                            SKELETON_SCALE_MAX,
+                            SKELETON_SCALE_DFLT,
+                            PF_Precision_HUNDREDTHS,
+                            0,
+                            0,
+                            SCALE_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(    STR(StrID_CropX_Param_Name),
+                            SKELETON_CROP_MIN,
+                            SKELETON_CROP_MAX,
+                            SKELETON_CROP_MIN,
+                            SKELETON_CROP_MAX,
+                            SKELETON_CROP_DFLT,
+                            PF_Precision_TEN_THOUSANDTHS,
+                            0,
+                            0,
+                            CROPX_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(    STR(StrID_CropY_Param_Name),
+                            SKELETON_CROP_MIN,
+                            SKELETON_CROP_MAX,
+                            SKELETON_CROP_MIN,
+                            SKELETON_CROP_MAX,
+                            SKELETON_CROP_DFLT,
+                            PF_Precision_TEN_THOUSANDTHS,
+                            0,
+                            0,
+                            CROPY_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
     
@@ -128,12 +161,15 @@ MySimpleGainFunc8 (
     
     // checkout (x,y) pixel from src layer
     PF_LayerDef layer = giP->checkout.u.ld;
+    
+    PF_FpLong sampleValue = giP->gainF;
+    PF_FpLong scaleValue = giP->scaleF;
+    
+    float cropXOffsetValue = giP->cropXOffsetF;
+    float cropYOffsetValue = giP->cropYOffsetF;
+    
     PF_Pixel8 *p = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + (xL * sizeof(PF_Pixel)));
     
-    /*if (p->red > 100)
-    {
-        p = inP;
-    }*/
     
     float in_red = static_cast<float>(inP->red) / 255.0f;
     float in_blue = static_cast<float>(inP->blue) / 255.0f;
@@ -163,21 +199,25 @@ MySimpleGainFunc8 (
     // compute v
     float value = cmax;
     
-    float blurScale = 0.2;
+    float blurScale = static_cast<float>(scaleValue);
     
     float x_velocity = value * sin(hue*PI/180);
     float y_velocity = value * cos(hue*PI/180);
     
 
     // sample scene texture along direction of motion
-    const float samples = 5;
+    const float samples = static_cast<float>(sampleValue);
     
     float red = 0;
     float green = 0;
     float blue = 0;
     float alpha = 0;
     
-    if (value > 0)
+    A_long crop_x = static_cast<A_long>(round(cropXOffsetValue*layer.width));
+    A_long crop_y = static_cast<A_long>(round(cropYOffsetValue*layer.height));
+    
+    
+    if ((xL > crop_x || xL <= layer.width-crop_x) && (yL > crop_y || yL <= layer.width-crop_y))
     {
         for(float i=0; i<samples; i++) {
             float t = i / (samples-1);
@@ -185,8 +225,8 @@ MySimpleGainFunc8 (
             A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
             A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
             
-            A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
-            A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
+            A_long coord_x = std::min(std::max(0+crop_x, xL + x_offset),layer.width-crop_x-1);
+            A_long coord_y = std::min(std::max(0+crop_y, yL + y_offset),layer.height-crop_y-1);
             
             PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
             
@@ -245,6 +285,10 @@ Render (
 
 	linesL 		   = output->extent_hint.bottom - output->extent_hint.top;
 	giP.gainF 	   = params[SKELETON_GAIN]->u.fs_d.value;
+    giP.scaleF     = params[SKELETON_SCALE]->u.fs_d.value;
+    giP.cropXOffsetF = params[SKELETON_CROP_X]->u.fs_d.value;
+    giP.cropYOffsetF = params[SKELETON_CROP_Y]->u.fs_d.value;
+    
     giP.checkout   = checkout;
 	
     ERR(suites.Iterate8Suite2()->iterate(	in_data,
