@@ -34,7 +34,8 @@ TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_Description,				"An empty (skeletal, if you will) effect sample,\r for your modifying pleasure.\rCopyright 2007-2023 Adobe Inc.",
 	StrID_Gain_Param_Name,			"Samples",
     StrID_Scale_Param_Name,         "Scale",
-    StrID_Threshold_Param_Name,     "Threshold"
+    StrID_Magnitude_Param_Name,     "Magnitude",
+    StrID_Direction_Param_Name,     "Direction",
 };
 
 

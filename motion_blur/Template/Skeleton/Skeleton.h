@@ -62,6 +62,9 @@ typedef short int			int16;
 #include "Skeleton_Strings.h"
 
 #include <algorithm>
+#include <vector>
+#include <numeric>
+#include <cmath>
 /* Versioning information */
 
 #define	MAJOR_VERSION	1
@@ -81,15 +84,20 @@ typedef short int			int16;
 #define SKELETON_SCALE_MAX      1
 #define SKELETON_SCALE_DFLT     0.2
 
-#define SKELETON_THRESHOLD_MIN      0
-#define SKELETON_THRESHOLD_MAX      1
-#define SKELETON_THRESHOLD_DFLT     0.5
+#define SKELETON_MAGNITUDE_MIN      0
+#define SKELETON_MAGNITUDE_MAX      1
+#define SKELETON_MAGNITUDE_DFLT     1
+
+#define SKELETON_DIRECTION_MIN      0
+#define SKELETON_DIRECTION_MAX      360
+#define SKELETON_DIRECTION_DFLT     0
 
 enum {
 	SKELETON_INPUT = 0,
 	SKELETON_GAIN,
     SKELETON_SCALE,
-    SKELETON_THRESHOLD,
+    SKELETON_MAGNITUDE,
+    SKELETON_DIRECTION,
     SKELETON_LAYER,
 	SKELETON_NUM_PARAMS
 };
@@ -98,13 +106,15 @@ enum {
 	GAIN_DISK_ID = 1,
     LAYER_DISK_ID,
     SCALE_DISK_ID,
-    THRESHOLD_DISK_ID
+    MAGNITUDE_DISK_ID,
+    DIRECTION_DISK_ID,
 };
 
 typedef struct GainInfo{
 	PF_FpLong	gainF;
     PF_FpLong   scaleF;
-    PF_FpLong   thresholdF;
+    PF_FpLong   magnitudeF;
+    PF_FpLong   directionF;
     PF_ParamDef checkout;
 } GainInfo, *GainInfoP, **GainInfoH;
 

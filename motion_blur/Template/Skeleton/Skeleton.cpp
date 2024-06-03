@@ -114,16 +114,27 @@ ParamsSetup (
                             0,
                             SCALE_DISK_ID);
     
-    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Threshold_Param_Name),
-                            SKELETON_THRESHOLD_MIN,
-                            SKELETON_THRESHOLD_MAX,
-                            SKELETON_THRESHOLD_MIN,
-                            SKELETON_THRESHOLD_MAX,
-                            SKELETON_THRESHOLD_DFLT,
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Magnitude_Param_Name),
+                            SKELETON_MAGNITUDE_MIN,
+                            SKELETON_MAGNITUDE_MAX,
+                            SKELETON_MAGNITUDE_MIN,
+                            SKELETON_MAGNITUDE_MAX,
+                            SKELETON_MAGNITUDE_DFLT,
                             PF_Precision_TEN_THOUSANDTHS,
                             0,
                             0,
-                            THRESHOLD_DISK_ID);
+                            MAGNITUDE_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_Direction_Param_Name),
+                            SKELETON_DIRECTION_MIN,
+                            SKELETON_DIRECTION_MAX,
+                            SKELETON_DIRECTION_MIN,
+                            SKELETON_DIRECTION_MAX,
+                            SKELETON_DIRECTION_DFLT,
+                            PF_Precision_TEN_THOUSANDTHS,
+                            0,
+                            0,
+                            DIRECTION_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
     
@@ -154,7 +165,10 @@ MySimpleGainFunc8 (
     
     PF_FpLong gainValue = giP->gainF;
     PF_FpLong scaleValue = giP->scaleF;
-    PF_FpLong thresholdValue = giP->thresholdF;
+    
+    PF_FpLong magnitudeValue = giP->magnitudeF;
+    PF_FpLong directionValue = giP->directionF;
+    
     
     PF_Pixel8 *p = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + (xL * sizeof(PF_Pixel)));
     
@@ -189,9 +203,10 @@ MySimpleGainFunc8 (
     
     const float blurScale = static_cast<float>(scaleValue);
     const float samples = static_cast<float>(gainValue);
-    const float threshold = static_cast<float>(thresholdValue);
     
-    
+    value = static_cast<float>(magnitudeValue);
+    hue = static_cast<float>(directionValue);
+
     float x_velocity = value * sin(hue*PI/180);
     float y_velocity = value * cos(hue*PI/180);
     
@@ -203,10 +218,7 @@ MySimpleGainFunc8 (
     float blue = 0;
     float alpha = 0;
     
-    
-    if (value > threshold)
-    {
-        for(float i=0; i<samples; i++) {
+    for(float i=0; i<samples; i++) {
             float t = i / (samples-1);
             
             A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
@@ -222,30 +234,110 @@ MySimpleGainFunc8 (
             green += (static_cast<float>(samp->green) / 255.0f);
             alpha += (static_cast<float>(samp->alpha) / 255.0f);
             
-        }
-        red/= samples;
-        blue/= samples;
-        green/= samples;
-        alpha/=samples;
-        
-        outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
-        outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
-        outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
-        outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
     }
-    else
-    {
-        outP->alpha = p->alpha;
-        outP->red = p->red;
-        outP->green = p->green;
-        outP->blue = p->blue;
-    }
+    red/= samples;
+    blue/= samples;
+    green/= samples;
+    alpha/=samples;
     
-	return err;
-        
+    outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
+    outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
+    outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
+    outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
+
+    return err;
+    
 }
 
-static PF_Err 
+static PF_Err
+MySecondPassFunc8 (
+    void        *refcon,
+    A_long        xL,
+    A_long        yL,
+    PF_Pixel8    *inP,
+    PF_Pixel8    *outP)
+{
+    PF_Err        err = PF_Err_NONE;
+
+    GainInfo    *giP    = reinterpret_cast<GainInfo*>(refcon);
+    
+    // checkout (x,y) pixel from src layer
+    PF_LayerDef layer = giP->checkout.u.ld;
+    
+    
+    PF_FpLong gainValue = giP->gainF;
+    PF_FpLong scaleValue = giP->scaleF;
+    
+    PF_FpLong magnitudeValue = giP->magnitudeF;
+    PF_FpLong directionValue = giP->directionF;
+    
+    float numLines = 20.0;
+    float lineLength = 0.2;
+    float lineThickness = lineLength / 100;
+
+    // sample scene texture along direction of motion
+    /*
+    float red = 0;
+    float green = 0;
+    float blue = 0;
+    float alpha = 0;
+    
+    float dir = static_cast<float>(directionValue);
+    
+    PF_Pixel8 *p = (PF_Pixel*)((char*)(layer).data + (yL * (layer).rowbytes) + (xL * sizeof(PF_Pixel)));
+    
+    outP->alpha = p->alpha;
+    outP->red = p->red;
+    outP->blue = p->blue;
+    outP->green = p->green;
+    
+    for(float i=0; i<numLines; i++) {
+        
+        srand(i);
+        // Calculate a random position for the line
+        float xRand = (static_cast<float>(rand())/static_cast<float>(RAND_MAX));
+        float yRand = (static_cast<float>(rand())/static_cast<float>(RAND_MAX));
+        
+        float xCur = (static_cast<float>(xL)/layer.width);
+        float yCur = (static_cast<float>(xL)/layer.height);
+
+        // Calculate distance between current texture point and line
+        std::vector<float> vec1;
+        vec1.push_back(xCur - xRand);
+        vec1.push_back(yCur - yRand);
+        
+        std::vector<float> vec2;
+        vec2.push_back(cos(dir));
+        vec2.push_back(sin(dir));
+        
+        float proj = std::min(std::max(0.0f, std::inner_product(vec1.begin(), vec1.end(), vec2.begin(), 0.0f)),lineLength);
+        
+        std::vector<float> vec3;
+        vec2.push_back(xRand + proj * vec2[0]);
+        vec2.push_back(yRand + proj * vec2[1]);
+        
+        float dist = sqrt((xCur - (xRand + proj * vec2[0]))*(xCur - (xRand + proj * vec2[0]))+(yCur - (yRand + proj * vec2[1]))*(yCur - (yRand + proj * vec2[1])));
+        
+        
+        // Interpolate color depending on thickness
+        outP->alpha = p->alpha;
+        outP->red = p->red;
+        outP->blue = p->blue;
+        outP->green = p->green;
+        
+        if (dist < lineThickness)
+        {
+            outP->alpha = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
+            outP->red = static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));
+            outP->green = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
+            outP->blue = static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));
+        }
+    }*/ 
+
+    return err;
+    
+}
+static PF_Err
 Render (
 	PF_InData		*in_data,
 	PF_OutData		*out_data,
@@ -273,19 +365,45 @@ Render (
 	linesL 		   = output->extent_hint.bottom - output->extent_hint.top;
 	giP.gainF 	   = params[SKELETON_GAIN]->u.fs_d.value;
     giP.scaleF     = params[SKELETON_SCALE]->u.fs_d.value;
-    giP.thresholdF = params[SKELETON_THRESHOLD]->u.fs_d.value;
+    giP.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
+    giP.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
     
     giP.checkout   = checkout;
 	
-    ERR(suites.Iterate8Suite2()->iterate(	in_data,
-                                            0,								// progress base
-                                            linesL,							// progress final
-                                            &params[SKELETON_INPUT]->u.ld,	// src
-                                            NULL,							// area - null for all pixels
-                                            (void*)&giP,					// refcon - your custom data pointer
-                                            MySimpleGainFunc8,				// pixel function pointer
-                                            output));
-
+    PF_EffectWorld first_pass_world;
+    AEFX_CLR_STRUCT(first_pass_world);
+    
+    ERR(PF_NEW_WORLD(in_data->width, in_data->height, PF_NewWorldFlag_CLEAR_PIXELS, &first_pass_world));
+    
+    if (!err) {
+        ERR(suites.Iterate8Suite2()->iterate(	in_data,
+                                             0,								// progress base
+                                             linesL,							// progress final
+                                             &params[SKELETON_INPUT]->u.ld,	// src
+                                             NULL,							// area - null for all pixels
+                                             (void*)&giP,					// refcon - your custom data pointer
+                                             MySimpleGainFunc8,				// pixel function pointer
+                                             &first_pass_world));
+        
+        GainInfo secondPassInfo;
+        AEFX_CLR_STRUCT(secondPassInfo);
+        secondPassInfo.gainF = params[SKELETON_GAIN]->u.fs_d.value;
+        secondPassInfo.scaleF = params[SKELETON_SCALE]->u.fs_d.value;
+        secondPassInfo.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
+        secondPassInfo.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
+        
+        // Second pass: apply the second shader/effect
+        ERR(suites.Iterate8Suite2()->iterate(    in_data,
+                                             0,                                // progress base
+                                             linesL,                            // progress final
+                                             &first_pass_world,                // src
+                                             NULL,                            // area - null for all pixels
+                                             (void*)&secondPassInfo,            // refcon - your custom data pointer
+                                             MySecondPassFunc8,                // pixel function pointer
+                                             output));
+        
+        ERR(suites.WorldSuite1()->dispose_world(in_data->effect_ref, &first_pass_world));
+    }
 	return err;
 }
 
