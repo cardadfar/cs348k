@@ -277,12 +277,12 @@ static PF_Err MySecondPassFunc8(
     float xCur = static_cast<float>(xL) / layer.width;
     float yCur = static_cast<float>(yL) / layer.height;
     
-    std::mt19937 gen(0);
-    std::uniform_int_distribution<> dis(1, 10);
+    std::mt19937 gen(static_cast<unsigned>(giP->frameSeed));
+    std::uniform_int_distribution<> dis(1, 50);
 
     for (float n = 0; n < numLines; n++) {
-        float xRand = static_cast<float>(dis(gen)) / 10.0f;
-        float yRand = static_cast<float>(dis(gen)) / 10.0f;
+        float xRand = static_cast<float>(dis(gen)) / 50.0f;
+        float yRand = static_cast<float>(dis(gen)) / 50.0f;
 
         float vec1_x = xCur - xRand;
         float vec1_y = yCur - yRand;
@@ -296,7 +296,7 @@ static PF_Err MySecondPassFunc8(
             outP->alpha = 255;
             outP->red = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
             outP->green = static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));;
-            outP->blue = static_cast<A_u_char>(std::min((xRand * yRand * 255.0), 255.0));;
+            outP->blue = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));;
         }
     }
 
@@ -359,7 +359,7 @@ Render (
         secondPassInfo.scaleF = params[SKELETON_SCALE]->u.fs_d.value;
         secondPassInfo.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
         secondPassInfo.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
-        secondPassInfo.frameSeed = in_data->current_time;
+        secondPassInfo.frameSeed = static_cast<A_long>(in_data->current_time / in_data->time_step);
         
         ERR(suites.Iterate8Suite2()->iterate(    in_data,
                                              0,                                // progress base
