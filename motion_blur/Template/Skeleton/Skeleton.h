@@ -116,6 +116,7 @@ typedef struct GainInfo{
     PF_FpLong   scaleF;
     PF_FpLong   magnitudeF;
     PF_FpLong   directionF;
+    A_long      frameSeed;
     PF_ParamDef checkout;
 } GainInfo, *GainInfoP, **GainInfoH;
 
