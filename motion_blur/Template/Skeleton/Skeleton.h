@@ -63,8 +63,9 @@ typedef short int			int16;
 
 #include <algorithm>
 #include <vector>
-#include <numeric>
 #include <cmath>
+#include <random>
+
 /* Versioning information */
 
 #define	MAJOR_VERSION	1
@@ -132,5 +133,6 @@ extern "C" {
 		void			*extra);
 
 }
+
 
 #endif // SKELETON_H

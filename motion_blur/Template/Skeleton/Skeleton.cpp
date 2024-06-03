@@ -156,7 +156,7 @@ MySimpleGainFunc8 (
 	PF_Pixel8	*outP)
 {
 	PF_Err		err = PF_Err_NONE;
-
+/*
 	GainInfo	*giP	= reinterpret_cast<GainInfo*>(refcon);
     
     // checkout (x,y) pixel from src layer
@@ -239,7 +239,89 @@ MySimpleGainFunc8 (
     outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
     outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
     outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
-    outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
+    outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));*/
+    
+    outP->alpha = 1;
+    outP->red = 0;
+    outP->green = 0;
+    outP->blue = 0;
+
+    return err;
+    
+}
+
+static PF_Err
+MySecondPassFunc8 (
+    void        *refcon,
+    A_long        xL,
+    A_long        yL,
+    PF_Pixel8    *inP,
+    PF_Pixel8    *outP)
+{
+    PF_Err        err = PF_Err_NONE;
+
+    GainInfo    *giP    = reinterpret_cast<GainInfo*>(refcon);
+    
+    PF_FpLong magnitudeValue = giP->magnitudeF;
+    PF_FpLong directionValue = giP->directionF;
+    
+    PF_LayerDef layer = giP->checkout.u.ld;
+    
+    float numLines = 20;
+    float lineLength = 0.1;
+    float lineThickness = lineLength / 100;
+
+    // sample scene texture along direction of motion
+    
+    float dir = static_cast<float>(directionValue);
+    
+    outP->alpha = inP->alpha;
+    outP->red = inP->red;
+    outP->blue = inP->blue;
+    outP->green = inP->green;
+    
+    for(float n=0; n<numLines; n++) {
+        
+        // Calculate a random position for the line
+        //unsigned seed = 12345; // Your specific seed value
+
+        // Use the seed to initialize the random number generator
+        std::mt19937 gen(static_cast<unsigned>(n));
+
+        // Generate two different random numbers
+        std::uniform_int_distribution<> dis(1, 100); // Distribution from 1 to 100
+
+        int random_number1 = dis(gen);
+        int random_number2 = dis(gen);
+        
+        float xRand = (static_cast<float>(random_number1))/100.0f;
+        float yRand = (static_cast<float>(random_number2))/100.0f;
+        
+        float xCur = (static_cast<float>(xL)/layer.width);
+        float yCur = (static_cast<float>(yL)/layer.height);
+
+        // Calculate distance between current texture point and line
+        std::vector<float> vec1;
+        vec1.push_back(xCur - xRand);
+        vec1.push_back(yCur - yRand);
+        
+        std::vector<float> vec2;
+        vec2.push_back(cos(dir/180.0f*PI));
+        vec2.push_back(sin(dir/180.0f*PI));
+        
+        float proj = std::min(std::max(0.0f, std::inner_product(vec1.begin(), vec1.end(), vec2.begin(), 0.0f)),lineLength);
+        
+        float dist = sqrt((xCur - (xRand + proj * vec2[0]))*(xCur - (xRand + proj * vec2[0]))+(yCur - (yRand + proj * vec2[1]))*(yCur - (yRand + proj * vec2[1])));
+        
+        
+        if (dist < lineThickness)
+        {
+            outP->alpha = 255;//static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
+            outP->red = 255;//static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));
+            outP->green = 255;//static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
+            outP->blue = 255;//static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));
+        }
+    }
 
     return err;
     
@@ -278,15 +360,41 @@ Render (
     
     giP.checkout   = checkout;
 	
-    ERR(suites.Iterate8Suite2()->iterate(	in_data,
+    PF_EffectWorld first_pass_world;
+    AEFX_CLR_STRUCT(first_pass_world);
+    
+    PF_NewWorldFlags flags = PF_NewWorldFlag_CLEAR_PIXELS;
+    ERR(suites.WorldSuite1()->new_world(in_data->effect_ref, output->width, output->height, flags, &first_pass_world));
+    
+    if (!err)
+    {
+        ERR(suites.Iterate8Suite2()->iterate(	in_data,
                                              0,								// progress base
                                              linesL,							// progress final
                                              &params[SKELETON_INPUT]->u.ld,	// src
                                              NULL,							// area - null for all pixels
                                              (void*)&giP,					// refcon - your custom data pointer
                                              MySimpleGainFunc8,				// pixel function pointer
+                                             &first_pass_world));
+        
+        GainInfo secondPassInfo;
+                AEFX_CLR_STRUCT(secondPassInfo);
+                secondPassInfo.gainF = params[SKELETON_GAIN]->u.fs_d.value;
+                secondPassInfo.scaleF = params[SKELETON_SCALE]->u.fs_d.value;
+                secondPassInfo.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
+                secondPassInfo.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
+        
+        ERR(suites.Iterate8Suite2()->iterate(    in_data,
+                                             0,                                // progress base
+                                             linesL,                            // progress final
+                                             &first_pass_world,    // src
+                                             NULL,                            // area - null for all pixels
+                                             (void*)&giP,                    // refcon - your custom data pointer
+                                             MySecondPassFunc8,                // pixel function pointer
                                              output));
-	return err;
+        ERR(suites.WorldSuite1()->dispose_world(in_data->effect_ref, &first_pass_world));
+    }
+    return err;
 }
 
 
