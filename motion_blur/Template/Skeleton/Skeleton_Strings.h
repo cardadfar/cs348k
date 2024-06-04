@@ -29,5 +29,7 @@ typedef enum {
     StrID_Scale_Param_Name,
     StrID_Magnitude_Param_Name,
     StrID_Direction_Param_Name,
+    StrID_NumLines_Param_Name,
+    StrID_LineLength_Param_Name,
 	StrID_NUMTYPES
 } StrIDType;

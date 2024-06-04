@@ -135,6 +135,28 @@ ParamsSetup (
                             0,
                             0,
                             DIRECTION_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_NumLines_Param_Name),
+                            SKELETON_NUM_LINES_MIN,
+                            SKELETON_NUM_LINES_MAX,
+                            SKELETON_NUM_LINES_MIN,
+                            SKELETON_NUM_LINES_MAX,
+                            SKELETON_NUM_LINES_DFLT,
+                            PF_Precision_INTEGER,
+                            0,
+                            0,
+                            NUM_LINES_DISK_ID);
+    
+    PF_ADD_FLOAT_SLIDERX(   STR(StrID_LineLength_Param_Name),
+                            SKELETON_LINE_LENGTH_MIN,
+                            SKELETON_LINE_LENGTH_MAX,
+                            SKELETON_LINE_LENGTH_MIN,
+                            SKELETON_LINE_LENGTH_MAX,
+                            SKELETON_LINE_LENGTH_DFLT,
+                            PF_Precision_TEN_THOUSANDTHS,
+                            0,
+                            0,
+                            LINE_LENGTH_DISK_ID);
 
 	AEFX_CLR_STRUCT(def);
     
@@ -162,58 +184,27 @@ MySimpleGainFunc8 (
     // checkout (x,y) pixel from src layer
     PF_LayerDef layer = giP->checkout.u.ld;
     
-    
     PF_FpLong gainValue = giP->gainF;
     PF_FpLong scaleValue = giP->scaleF;
     
     PF_FpLong magnitudeValue = giP->magnitudeF;
     PF_FpLong directionValue = giP->directionF;
     
-    float in_red = static_cast<float>(inP->red) / 255.0f;
-    float in_blue = static_cast<float>(inP->blue) / 255.0f;
-    float in_green = static_cast<float>(inP->green) / 255.0f;
-    
-    float cmax = std::max(in_red, std::max(in_green, in_blue)); // maximum of r, g, b
-    float cmin = std::min(in_red, std::min(in_green, in_blue)); // minimum of r, g, b
-    float diff = cmax - cmin; // diff of cmax and cmin.
-    float hue = -1;
-      
-    // if cmax and cmax are equal then h = 0
-    if (cmax == cmin)
-        hue = 0;
-  
-    // if cmax equal r then compute h
-    else if (cmax == in_red)
-        hue = fmod(60 * ((in_green - in_blue) / diff) + 360, 360);
-  
-    // if cmax equal g then compute h
-    else if (cmax == in_green)
-        hue = fmod(60 * ((in_blue - in_red) / diff) + 120, 360);
-  
-    // if cmax equal b then compute h
-    else if (cmax == in_blue)
-        hue = fmod(60 * ((in_red - in_green) / diff) + 240, 360);
-  
-    // compute v
-    float value = cmax;
-    
     const float blurScale = static_cast<float>(scaleValue);
     const float samples = static_cast<float>(gainValue);
     
-    value = static_cast<float>(magnitudeValue);
-    hue = static_cast<float>(directionValue);
+    const float mag = static_cast<float>(magnitudeValue);
+    const float dir = static_cast<float>(directionValue);
 
-    float x_velocity = value * sin(hue*PI/180);
-    float y_velocity = value * cos(hue*PI/180);
-    
-
-    // sample scene texture along direction of motion
+    float x_velocity = mag * sin(dir * 180.0f * PI);
+    float y_velocity = mag * cos(dir * 180.0f * PI);
     
     float red = 0;
     float green = 0;
     float blue = 0;
     float alpha = 0;
     
+    // sample scene texture along direction of motion
     for(float i=0; i<samples; i++) {
             float t = i / (samples-1);
             
@@ -256,34 +247,36 @@ static PF_Err MySecondPassFunc8(
 
     GainInfo *giP = reinterpret_cast<GainInfo*>(refcon);
 
-    PF_FpLong magnitudeValue = giP->magnitudeF;
     PF_FpLong directionValue = giP->directionF;
-
+    PF_FpLong numLinesValue = giP->numLinesF;
+    PF_FpLong lineLengthValue = giP->lineLengthF;
+    
     PF_LayerDef layer = giP->checkout.u.ld;
 
-    float numLines = 20;
-    float lineLength = 0.1f;
-    float lineThickness = lineLength / 100.0f;
+    float numLines = static_cast<float>(numLinesValue);
+    float lineLength = static_cast<float>(lineLengthValue);
+    float lineThickness = lineLength / 50.0f;
 
     float dir = static_cast<float>(directionValue);
     float cos_dir = cos(dir / 180.0f * PI);
     float sin_dir = sin(dir / 180.0f * PI);
-
-    outP->alpha = inP->alpha;
-    outP->red = inP->red;
-    outP->blue = inP->blue;
-    outP->green = inP->green;
     
     float xCur = static_cast<float>(xL) / layer.width;
     float yCur = static_cast<float>(yL) / layer.height;
     
     std::mt19937 gen(static_cast<unsigned>(giP->frameSeed));
     std::uniform_int_distribution<> dis(1, 50);
-
+    
+    outP->alpha = inP->alpha;
+    outP->red = inP->red;
+    outP->blue = inP->blue;
+    outP->green = inP->green;
+    
     for (float n = 0; n < numLines; n++) {
         float xRand = static_cast<float>(dis(gen)) / 50.0f;
         float yRand = static_cast<float>(dis(gen)) / 50.0f;
-
+        float colorRand = static_cast<float>(dis(gen)) / 50.0f;
+        
         float vec1_x = xCur - xRand;
         float vec1_y = yCur - yRand;
 
@@ -294,12 +287,15 @@ static PF_Err MySecondPassFunc8(
 
         if (dist_squared < lineThickness * lineThickness) {
             outP->alpha = 255;
-            outP->red = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));
-            outP->green = static_cast<A_u_char>(std::min((yRand * 255.0), 255.0));;
-            outP->blue = static_cast<A_u_char>(std::min((xRand * 255.0), 255.0));;
+            outP->red = 0;
+            outP->blue = 0;
+            outP->green = 0;
+            
+            if (colorRand > 0.5)
+                outP->red = 255;
         }
     }
-
+    
     return err;
 }
 
@@ -333,6 +329,9 @@ Render (
     giP.scaleF     = params[SKELETON_SCALE]->u.fs_d.value;
     giP.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
     giP.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
+    giP.numLinesF = params[SKELETON_NUM_LINES]->u.fs_d.value;
+    giP.lineLengthF = params[SKELETON_LINE_LENGTH]->u.fs_d.value;
+    giP.frameSeed = static_cast<A_long>(in_data->current_time / in_data->time_step);
     
     giP.checkout   = checkout;
 	
@@ -353,14 +352,7 @@ Render (
                                              MySimpleGainFunc8,				// pixel function pointer
                                              &first_pass_world));
         
-        GainInfo secondPassInfo;
-        AEFX_CLR_STRUCT(secondPassInfo);
-        secondPassInfo.gainF = params[SKELETON_GAIN]->u.fs_d.value;
-        secondPassInfo.scaleF = params[SKELETON_SCALE]->u.fs_d.value;
-        secondPassInfo.magnitudeF = params[SKELETON_MAGNITUDE]->u.fs_d.value;
-        secondPassInfo.directionF = params[SKELETON_DIRECTION]->u.fs_d.value;
-        secondPassInfo.frameSeed = static_cast<A_long>(in_data->current_time / in_data->time_step);
-        
+
         ERR(suites.Iterate8Suite2()->iterate(    in_data,
                                              0,                                // progress base
                                              linesL,                            // progress final

@@ -36,6 +36,8 @@ TableString		g_strs[StrID_NUMTYPES] = {
     StrID_Scale_Param_Name,         "Scale",
     StrID_Magnitude_Param_Name,     "Magnitude",
     StrID_Direction_Param_Name,     "Direction",
+    StrID_NumLines_Param_Name,      "Number of Lines",
+    StrID_LineLength_Param_Name,      "Line Length"
 };
 
 

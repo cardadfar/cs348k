@@ -93,12 +93,22 @@ typedef short int			int16;
 #define SKELETON_DIRECTION_MAX      360
 #define SKELETON_DIRECTION_DFLT     0
 
+#define SKELETON_NUM_LINES_MIN      0
+#define SKELETON_NUM_LINES_MAX      20
+#define SKELETON_NUM_LINES_DFLT     10
+
+#define SKELETON_LINE_LENGTH_MIN    0
+#define SKELETON_LINE_LENGTH_MAX    0.5
+#define SKELETON_LINE_LENGTH_DFLT   0.1
+
 enum {
 	SKELETON_INPUT = 0,
 	SKELETON_GAIN,
     SKELETON_SCALE,
     SKELETON_MAGNITUDE,
     SKELETON_DIRECTION,
+    SKELETON_NUM_LINES,
+    SKELETON_LINE_LENGTH,
     SKELETON_LAYER,
 	SKELETON_NUM_PARAMS
 };
@@ -109,6 +119,8 @@ enum {
     SCALE_DISK_ID,
     MAGNITUDE_DISK_ID,
     DIRECTION_DISK_ID,
+    LINE_LENGTH_DISK_ID,
+    NUM_LINES_DISK_ID
 };
 
 typedef struct GainInfo{
@@ -116,6 +128,8 @@ typedef struct GainInfo{
     PF_FpLong   scaleF;
     PF_FpLong   magnitudeF;
     PF_FpLong   directionF;
+    PF_FpLong   numLinesF;
+    PF_FpLong   lineLengthF;
     A_long      frameSeed;
     PF_ParamDef checkout;
 } GainInfo, *GainInfoP, **GainInfoH;
