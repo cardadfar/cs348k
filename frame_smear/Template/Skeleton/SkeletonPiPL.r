@@ -13,7 +13,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [2] */
 		Name {
-			"Skeleton"
+			"Frame Smear"
 		},
 		/* [3] */
 		Category {
@@ -57,7 +57,7 @@ resource 'PiPL' (16000) {
 		},
 		/* [11] */
 		AE_Effect_Match_Name {
-			"ADBE Skeleton"
+			"ADBE Frame Smear"
 		},
 		/* [12] */
 		AE_Reserved_Info {

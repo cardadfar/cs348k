@@ -303,8 +303,8 @@ PF_Err PluginDataEntryFunction2(
 	result = PF_REGISTER_EFFECT_EXT2(
 		inPtr,
 		inPluginDataCallBackPtr,
-		"Skeleton", // Name
-		"ADBE Skeleton", // Match Name
+		"Frame Smear", // Name
+		"ADBE Frame Smear", // Match Name
 		"Sample Plug-ins", // Category
 		AE_RESERVED_INFO, // Reserved Info
 		"EffectMain",	// Entry point
