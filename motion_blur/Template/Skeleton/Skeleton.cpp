@@ -380,8 +380,8 @@ PF_Err PluginDataEntryFunction2(
 	result = PF_REGISTER_EFFECT_EXT2(
 		inPtr,
 		inPluginDataCallBackPtr,
-		"Skeleton", // Name
-		"ADBE Skeleton", // Match Name
+		"Directional Motion Blur", // Name
+		"ADBE Directional Motion Blur", // Match Name
 		"Sample Plug-ins", // Category
 		AE_RESERVED_INFO, // Reserved Info
 		"EffectMain",	// Entry point

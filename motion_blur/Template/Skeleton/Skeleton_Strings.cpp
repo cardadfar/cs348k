@@ -30,7 +30,7 @@ typedef struct {
 
 TableString		g_strs[StrID_NUMTYPES] = {
 	StrID_NONE,						"",
-	StrID_Name,						"Skeleton",
+	StrID_Name,						"Directional Motion Blur",
 	StrID_Description,				"An empty (skeletal, if you will) effect sample,\r for your modifying pleasure.\rCopyright 2007-2023 Adobe Inc.",
 	StrID_Gain_Param_Name,			"Samples",
     StrID_Scale_Param_Name,         "Scale",
