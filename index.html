@@ -269,11 +269,11 @@
     <div class=block>
     <div class=subtitle id=#dithering>Approach [Dithering]</div>
 
-    <img src="assets/hobbes_intro.png">
+    <img src="assets/dither.gif">
     <div class=caption>Fig 1. Introduction of Hobbes | Across the Spiderverse (2023)</div>
 
     <p>
-        The dithering script is a relatively simple script which uses a set Bayer matrix for each frame and off-colors the edges of a pixel region (currently each 3x3 pixel square in a frame) to create the appearance of a dithering pattern. This process is memoryless and does not use previous frames to inform current frames. The severity of the coloring can be increased or decreased by modifying an nlevels variable which essentially alters the number of colors available for that region's pallete, moving pixel colorations to the nearest available option. At a high nlevels value, the produced frames of the video becomes visually identical to the original, while low nlevel values produce more distinguishablly differentiated dithering regions.
+        The dithering script uses a fixed Bayer 3x3 matrix for each frame and off-colors each pixel region (currently each 3x3 pixel square in a frame through modulation) to create a dithering pattern. This process is memoryless and does not use previous frames to inform current frames. The severity of the coloring can be increased or decreased by modifying an levels variable which essentially alters the number of colors available for that region's palette, moving pixel colorations to the nearest available option after applying the dithering matrix. At a high levels value, the produced frames of the video become visually identical to the original, while low level values produce more distinguishable differentiated dithering regions.
     </p>
     </div>
 
