@@ -274,7 +274,7 @@
     <div class=caption>Fig 1. Shadertoy sample footage using dithering shader</div>
 
     <p>
-        The dithering script uses a fixed Bayer 3x3 matrix for each frame and off-colors each pixel region (currently each 3x3 pixel square in a frame through modulation) to create a dithering pattern. This process is memoryless and does not use previous frames to inform current frames. The severity of the coloring can be increased or decreased by modifying an levels variable which essentially alters the number of colors available for that region's palette, moving pixel colorations to the nearest available option after applying the dithering matrix. At a high levels value, the produced frames of the video become visually identical to the original, while low level values produce more distinguishable differentiated dithering regions.
+        The dithering script uses a fixed Bayer 3x3 matrix for each frame and off-colors each pixel region (currently each 3x3 pixel square in a frame through modulation) to create a dithering pattern. This process is does not use previous frames to inform current frames, as moving dithering patterns could stray from the intended effect. The severity of the coloring can be increased or decreased by modifying an levels variable which essentially alters the number of colors available for that region's palette, moving pixel colorations to the nearest available option after applying the dithering matrix. At a high levels value, the produced frames of the video become visually identical to the original, while low level values produce more distinguishable differentiated dithering regions.
     </p>
     </div>
 
@@ -294,7 +294,7 @@
     <img src="assets/singlitch.gif">
     <div class=caption>Fig 3. Shadertoy sample footage using Sin Wave Glitch Shader</div> 
     <p>
-        This was another attempt at creating a glitch effect, this time using sin waves. The process calculates a "glitch amount" value calulated via a sum of sin values using each pixel's x and y uv values as inputs along with a similar offset strategy to the Mr. Negative shader. The result is several noticable sin waves offsetting the image in a unique rgb effect, but the pattern seemed to regular and thus not "glitchy" enough.
+        This was another attempt at creating a glitch effect, this time using sin waves. The process calculates a "glitch amount" value calulated via a sum of sin values using each pixel's x and y uv values as inputs along with a similar offset strategy to the Mr. Negative shader. The result is several noticable sin waves offsetting the image in a unique rgb effect, but the pattern seemed too regular and thus not "glitchy" enough.
     </p>
 
     <img src="assets/glitch.gif">
