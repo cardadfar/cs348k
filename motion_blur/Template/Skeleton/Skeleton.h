@@ -95,7 +95,7 @@ typedef short int			int16;
 
 #define SKELETON_NUM_LINES_MIN      0
 #define SKELETON_NUM_LINES_MAX      20
-#define SKELETON_NUM_LINES_DFLT     10
+#define SKELETON_NUM_LINES_DFLT     0
 
 #define SKELETON_LINE_LENGTH_MIN    0
 #define SKELETON_LINE_LENGTH_MAX    0.5

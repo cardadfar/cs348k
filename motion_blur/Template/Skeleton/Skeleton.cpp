@@ -233,50 +233,50 @@ MySimpleGainFunc8 (
     float n = 0;
     
     // sample scene texture along direction of motion
-    for(float i=0; i<numLines; i++) {
+    for(float i=0; i<samples; i++) {
             
-        if (n < samples)
+        if (n < numLines)
         {
-            float t = i / (samples-1);
-                    
-            A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
-            A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
+            float xRand = static_cast<float>(dis(gen)) / 50.0f;
+            float yRand = static_cast<float>(dis(gen)) / 50.0f;
+            float colorRand = static_cast<float>(dis(gen)) / 50.0f;
             
-            A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
-            A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
+            float vec1_x = xCur - xRand;
+            float vec1_y = yCur - yRand;
             
-            PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
+            float proj = std::min(std::max(0.0f, vec1_x * cos_dir + vec1_y * sin_dir), lineLength);
             
-            red += (static_cast<float>(samp->red) / 255.0f) * (1.0f/samples);
-            blue += (static_cast<float>(samp->blue) / 255.0f) * (1.0f/samples);
-            green += (static_cast<float>(samp->green) / 255.0f) * (1.0f/samples);
-            alpha += (static_cast<float>(samp->alpha) / 255.0f) * (1.0f/samples);
-            n++;
+            float dist_squared = (xCur - (xRand + proj * cos_dir)) * (xCur - (xRand + proj * cos_dir)) +
+            (yCur - (yRand + proj * sin_dir)) * (yCur - (yRand + proj * sin_dir));
+            
+            if (dist_squared < lineThickness * lineThickness) {
+                alpha = 1.0f;
+                red = 0.0f;
+                blue = 0.0f;
+                green = 0.0f;
+                
+                if (colorRand > 0.5)
+                    red = 1.0f;
+                
+                break;
+            }
+            
         }
+        float t = i / (samples-1);
+                
+        A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
+        A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
         
-        float xRand = static_cast<float>(dis(gen)) / 50.0f;
-        float yRand = static_cast<float>(dis(gen)) / 50.0f;
-        float colorRand = static_cast<float>(dis(gen)) / 50.0f;
+        A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
+        A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
         
-        float vec1_x = xCur - xRand;
-        float vec1_y = yCur - yRand;
+        PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
         
-        float proj = std::min(std::max(0.0f, vec1_x * cos_dir + vec1_y * sin_dir), lineLength);
-        
-        float dist_squared = (xCur - (xRand + proj * cos_dir)) * (xCur - (xRand + proj * cos_dir)) +
-        (yCur - (yRand + proj * sin_dir)) * (yCur - (yRand + proj * sin_dir));
-        
-        if (dist_squared < lineThickness * lineThickness) {
-            alpha = 1.0f;
-            red = 0.0f;
-            blue = 0.0f;
-            green = 0.0f;
-            
-            if (colorRand > 0.5)
-                red = 1.0f;
-            
-            break;
-        }
+        red += (static_cast<float>(samp->red) / 255.0f) * (1.0f/samples);
+        blue += (static_cast<float>(samp->blue) / 255.0f) * (1.0f/samples);
+        green += (static_cast<float>(samp->green) / 255.0f) * (1.0f/samples);
+        alpha += (static_cast<float>(samp->alpha) / 255.0f) * (1.0f/samples);
+        n++;
         
     }
     /*red/= samples;
