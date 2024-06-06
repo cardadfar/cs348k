@@ -43,8 +43,12 @@
 */
 
 #include "Skeleton.h"
+#include <chrono>
+#include <fstream>
+#include <filesystem>
+#include <iostream>
 
-static PF_Err 
+static PF_Err
 About (	
 	PF_InData		*in_data,
 	PF_OutData		*out_data,
@@ -177,6 +181,10 @@ MySimpleGainFunc8 (
 	PF_Pixel8	*inP, 
 	PF_Pixel8	*outP)
 {
+    // Second Shader Pass Timing
+    auto start_pass2 = std::chrono::high_resolution_clock::now();
+    // Second Shader Pass TIming
+    
 	PF_Err		err = PF_Err_NONE;
     
 	GainInfo	*giP	= reinterpret_cast<GainInfo*>(refcon);
@@ -231,7 +239,18 @@ MySimpleGainFunc8 (
     outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
     outP->green = static_cast<A_u_char>(std::min((green * 255.0), 255.0));
     outP->blue = static_cast<A_u_char>(std::min((blue * 255.0), 255.0));
- 
+    
+    // Second shader pass timing
+    auto end_pass2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_pass1 = end_pass2 - start_pass2;
+    std::cout << "..." << std::endl;
+    
+    std::ofstream logFile("plugin_benchmark_2.log", std::ios::app);
+    if (logFile.is_open()) {
+        logFile << elapsed_pass1.count() << std::endl;
+        logFile.close();
+    }
+    // Second shader pass timing
     return err;
     
 }
@@ -243,6 +262,10 @@ static PF_Err MySecondPassFunc8(
     PF_Pixel8   *inP,
     PF_Pixel8   *outP)
 {
+    // First Shader Pass Timing
+    auto start_pass1 = std::chrono::high_resolution_clock::now();
+    // First Shader Pass TIming
+    
     PF_Err err = PF_Err_NONE;
 
     GainInfo *giP = reinterpret_cast<GainInfo*>(refcon);
@@ -295,6 +318,18 @@ static PF_Err MySecondPassFunc8(
                 outP->red = 255;
         }
     }
+    
+    // First shader pass timing
+    auto end_pass1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_pass1 = end_pass1 - start_pass1;
+    std::cout << "..." << std::endl;
+    
+    std::ofstream logFile("plugin_benchmark_1.log", std::ios::app);
+    if (logFile.is_open()) {
+        logFile << elapsed_pass1.count() << std::endl;
+        logFile.close();
+    }
+    // First shader pass timing
     
     return err;
 }
