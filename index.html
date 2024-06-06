@@ -125,6 +125,7 @@
     <a href=#approach-paper-expand>Approach [Paper Expand]</a>
     <a href=#experiments-paper-expand>Experiments [Paper Expand]</a>
     <a href=#smearing>Approach [Frame Smearing]</a>
+    <a href=#blur>Approach [Directional Motion Blur]</a>
     <a href=#dithering>Approach [Dithering]</a>
     <a href=#rgb-glitch>Approach [RGB Glitch]</a>    
     <a href=#responsibilities>Responsibilities</a>
@@ -232,7 +233,7 @@
     <div class=block>
     <div class=subtitle id=#smearing>Approach [Frame Smearing]</div>
 
-    <img src="assets/frame_smearing/spiderverse_smear_example.jpeg">
+    <img src="assets/frame_smear_videos/spiderverse_smear_example.jpeg">
     <div class=caption>Fig 1. Frame Smearing Example | Across the Spiderverse (2023)</div>
 
     <p>
@@ -242,8 +243,8 @@
         For one, the shader would need to keep track of the key features that are moving across frames. Then, we would need to extract those key features across a set of consecutive frames, and render them on the current frame. Given that we are limited to 2D footage, this task becomes challenging, as we have no access to 3D vertices that we can extract displacement information from. Moreover, since we can’t pass information between frames in the AE plugin, we decide not to obtain the smearing effect by extracting the moving features from following frames. 
     </p>
     
-    <img src="assets/frame_smearing/test_frame_smear_1.gif">
-    <img src="assets/frame_smearing/test_frame_smear_1_dense.gif">
+    <img src="assets/frame_smear_videos/test_frame_smear_1.gif">
+    <img src="assets/frame_smear_videos/test_frame_smear_1_dense.gif">
     <div class=caption>Fig 2. Optical Flow Map Example | Tom and Jerry (2022)</div>
 
     <p>
@@ -252,18 +253,42 @@
     <p>
         Next, we insert this generated optical flow map video as an additional layer in After Effects to be inputted into the plugin script (analogous to passing a second texture to the shader). The shader in the plugin script will determine the magnitude and direction of motion at any given pixel (given from the optical flow texture) and will subsequently perform an averaging of pixels in the magnitude and direction of motion. The algorithm looks like the following: 
     </p>
-    <img src="assets/frame_smearing/smear_algo.png">
-    <img src="assets/frame_smearing/smear_ae_parameters.png">
+    <img src="assets/frame_smear_videos/smear_algo.png">
+    <img src="assets/frame_smear_videos/smear_ae_parameters.png">
     <div class=caption>Fig 2. Algorithm and AE Parameter Sliders</div>
         
     <p>
         Given a pixel's velocity vector's magnitude (derived from optical flow map) is over a threshold constant, we perform averaging over a number of sample points, each point obtained by solving the equation of motion: (x_2, y_2) = (x_1, y_2) s * v * t, where s denotes the scale parameter, v denotes the direction vector obtained from the optical flow map, and t denotes the reciprocal of the number of samples. We parameterize the scale of motion, number of samples, and velocity threshold into AE sliders such that compositors can easily change and tune the effect to their liking. Number of samples determines how many times we observe the smear lines. Scale determines how spaced apart the smear lines are. Threshold determines over which minimum velocity should smear lines be rendered. For instance, setting threshold at 1 would produce no motion blur, while setting threshold to 0 would produce all motion blur as indicated by the optical flow texture. 
     </p>
     <p>
-        Fortunately, this shader algorithm runs in real-time and responds instantly to changes in parameterization (for which we cap each parameter at a fixed range for real-time performance), which is what we aim for. This way, artists can preview their composites as soon as they add the effect. We also demonstrate that this plugin can be used over any footage, animation or real-world. Below is a gallery of our carefully-tuned motion blur composites.  
+        Fortunately, this shader algorithm runs in real-time and responds instantly to changes in parameterization (for which we cap each parameter at a fixed range for real-time performance), which is what we aim for. This way, artists can preview their composites as soon as they add the effect. We also demonstrate that this plugin can be used over any footage, animation or real-world. Below is a gallery of our carefully-tuned frame smear composites. As motion in Spiderverse is animated every other frame, the Spiderverse footage composites yielded very visually interesting results, namely this “popping” effect when the smear is activated every other frame.  
     </p>
     </div>
 
+    <div class=block>
+    <div class=subtitle id=#blur>Approach [Directional Motion Blur]</div>
+
+    <img src="assets/motion_blur_videos/spiderverse_blur_example.jpeg">
+    <div class=caption>Fig 1. Motion Blur Example | Across the Spiderverse (2023)</div>
+    <p>
+        The directional motion blur plugin aims to create the stylistic Spiderverse blur, a comic-like blur that uses streaks of lines along the intended blur direction to accentuate motion. For this effect, we use two shader passes, one to produce blur in a specified direction and the other to draw randomly spaced red and black lines in this specified direction. The algorithm looks like the following: 
+    </p>
+    <p>
+        To achieve directional blur in the first pass, we perform averaging over a number of sample points, each point obtained by solving the following motion equation. *t. We parameterize the number of samples, scale of motion, the magnitude and velocity of the direction vector. Number of samples determines how many samples we average over to obtain the blur. Scale determines how spaced apart the blur lines are. Direction is parameterized in angle (0 to 360 degrees) which allows control over the direction of the blur. 
+    </p>
+    <p>
+        In the second pass, we generate a random set of lines to rasterize. To do so, we iterate over the total number of lines, and in each iteration we seed random numbers to randomize the starting position of the line and the color of the line (red or black). We then determine whether the current pixel is within the line by computing the closest point on the line to the current pixel (projection using dot product). If the distance from the current pixel to the closest point on the line is smaller than the line width, we color that pixel as red or black. To create random lines at each frame, we seed the random numbers using the frame time variable. We utilize the Mersenne Twister pseudo-random number generator from the C++ random library to obtain the random numbers. We also parameterize the number of lines, and line length using AE sliders. 
+    </p>
+    <p>
+        Of course, this second pass is extremely inefficient, given that we run two loops over every single pixel in each frame. We optimize this by combining both passes into one pass. We use one loop to perform both blurring and random line drawing. The combined loop is shown below. We benchmark performance of both algorithms testing a varying number of lines.   
+    </p>
+    <p>
+        Even with the optimization, this shader is still inefficient and not real time. A more obvious approach to this problem is probably not using a shader to generate lines (which performs pixel by pixel computations per frame) but rather using a simple rasterizer that just draws the lines on each frame. 
+    </p>
+    <p>
+        Our directional blur shader is rudimentary. Some additional improvements we could expand our shader on include enabling a perspective 3D blur. For instance, if we have a subject that is moving towards the camera, the direction vectors from different parts of the frame will look different, hence we cannot use the uni-directional motion blur we made for this project. Another potential improvement is anti-aliasing the lines or adding more natural lines or soft contours, rather than a harsh line. A 2D gaussian splatting approach instead of line-drawing could be interesting to investigate and could create more natural looking streaks. Below is a gallery of our custom-tuned directional motion blur composites. 
+    </p>
+    </div>
 
 
     
