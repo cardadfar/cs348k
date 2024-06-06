@@ -231,14 +231,35 @@
     <div class=block>
     <div class=subtitle id=#smearing>Approach [Frame Smearing]</div>
 
-    <img src="assets/frame_smearing/smear_example.jpeg">
+    <img src="assets/frame_smearing/spiderverse_smear_example.jpeg">
     <div class=caption>Fig 1. Frame Smearing Example | Across the Spiderverse (2023)</div>
 
     <p>
-        The frame smearing script aims to create an artistic "smearing" effect which interpolates consecutive frames of movement and creates more movement in the composition. This is better illustrated in the example taken from Spiderverse. There are multiple approaches to achieve this. 
+        The frame smearing plugin aims to create an artistic "smearing" effect which interpolates consecutive frames of movement and creates more movement in the composition. This is better illustrated in the example taken from Spiderverse. There are multiple approaches to achieve this.
     </p>
-    <p> 
-        For one, the shader would need to keep track of the key features that are moving across frames by employing optical flow.   
+    <p>
+        For one, the shader would need to keep track of the key features that are moving across frames. Then, we would need to extract those key features across a set of consecutive frames, and render them on the current frame. Given that we are limited to 2D footage, this task becomes challenging, as we have no access to 3D vertices that we can extract displacement information from. Moreover, since we can’t pass information between frames in the AE plugin, we decide not to obtain the smearing effect by extracting the moving features from following frames. 
+    </p>
+    
+    <img src="assets/frame_smearing/test_frame_smear_1.gif">
+    <img src="assets/frame_smearing/test_frame_smear_1_dense.gif">
+    <div class=caption>Fig 2. Optical Flow Map Example | Tom and Jerry (2022)</div>
+
+    <p>
+        Instead, we employ a simplified approach using optical flow. Our workflow is segmented into two steps. First, we run the input video through our optical flow map generator script. This script utilizes the OpenCV API to perform dense optical flow calculations (Gunnar-Farneback method), obtaining velocity vectors illustrating movement between frames. This script produces a new video of the same length, depicting velocity vectors between each frame in HSV, where hue represents the angle of direction and value represents the magnitude of direction. Above is an example of the optical flow map video. We also employ a combination of gaussian and median filtering to denoise this output video. 
+    </p>
+    <p>
+        Next, we insert this generated optical flow map video as an additional layer in After Effects to be inputted into the plugin script (analogous to passing a second texture to the shader). The shader in the plugin script will determine the magnitude and direction of motion at any given pixel (given from the optical flow texture) and will subsequently perform an averaging of pixels in the magnitude and direction of motion. The algorithm looks like the following: 
+    </p>
+    <img src="assets/frame_smearing/smear_algo.png">
+    <img src="assets/frame_smearing/smear_ae_parameters.png">
+    <div class=caption>Fig 2. Algorithm and AE Parameter Sliders</div>
+        
+    <p>
+        Given a pixel's velocity vector's magnitude (derived from optical flow map) is over a threshold constant, we perform averaging over a number of sample points, each point obtained by solving the equation of motion: (x_2, y_2) = (x_1, y_2) s * v * t, where s denotes the scale parameter, v denotes the direction vector obtained from the optical flow map, and t denotes the reciprocal of the number of samples. We parameterize the scale of motion, number of samples, and velocity threshold into AE sliders such that compositors can easily change and tune the effect to their liking. Number of samples determines how many times we observe the smear lines. Scale determines how spaced apart the smear lines are. Threshold determines over which minimum velocity should smear lines be rendered. For instance, setting threshold at 1 would produce no motion blur, while setting threshold to 0 would produce all motion blur as indicated by the optical flow texture. 
+    </p>
+    <p>
+        Fortunately, this shader algorithm runs in real-time and responds instantly to changes in parameterization (for which we cap each parameter at a fixed range for real-time performance), which is what we aim for. This way, artists can preview their composites as soon as they add the effect. We also demonstrate that this plugin can be used over any footage, animation or real-world. Below is a gallery of our carefully-tuned motion blur composites.  
     </p>
     </div>
 
