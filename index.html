@@ -278,38 +278,34 @@
     </p>
     </div>
 
-    <div class=block>
-        <div class=subtitle id=#finalevaluation>Final Evaluation</div>
-
-        <img src="assets/final.gif">
-        <div class=caption>Fig 1. Compositing all filters | Across the Spiderverse (2023)</div>
-
-        <p>
-            For the final evaluation, we felt that because this is a creative product, that it requires creative evaluation. We interviewed people in the animation industry, from students to graphics engineers to animators, on their thoughts when viewing our results. Some feedback we recieved:
-            <br><br>
-            <b>Graphics Engineer</b>: looks cool, would love to see more about the robustness.<br>
-            <b>After Effects User #1</b>: really cool, can we ship some of these effects in After Effects as a plugin?<br>
-            <b>After Effects User #2</b>: I love how quick and easy it is to pick up these effects. The beauty is in the parameteribility<br>
-
-        </p>
-    </div>
-
-
 
 
     <div class=block>
     <div class=subtitle id=#rgb-glitch>Approach [RGB Glitch]</div>
 
     <img src="assets/negative.gif">
-    <div class=caption>Fig 1. Shadertoy sample footage using Mr. Negative Shader shader</div>
+    <div class=caption>Fig 1. Shadertoy sample footage using Mr. Negative Shader</div>
     <img src="assets/rgbnegative.gif">
-    <div class=caption>Fig 2. Shadertoy sample footage using Mr. Negative Shader shader without grayscaling</div>
-        
+    <div class=caption>Fig 2. Shadertoy sample footage using Mr. Negative Shader without grayscaling</div>
     <p>
-        When first working on the rgb glitch effect, the goal was to emulate the color offput present in spiderverse
+        When first working on the rgb glitch effect, the goal was to emulate the color offput present in Into the Spiderverse where segments of a frame would be offset from their original positions very briefly. The first attempt at this effect resulted in the above effect resembling Mr. Negative from the Spider Man PS4 game. The effect is achieved for each pixel by sampling another pixel a small distance to the left (R), right (G), and above a the pixel (B), then finding the color difference between the offset pixels and the current one. If there is no or little difference (generally non edges), then the pixel coloration will be black, where depending on edge orientation, the edges create a rainbow effect since the colorations are based on three separate edge detection distances individually. By applying a dot product to the resulting color values, this effect can grayscale the frame to create something more resembling Mr. Negative. A benefit of using this particular offset effect feature using individual directions for each color input is that the output edges appear more distinct and uniform (solid colors) while still having a "glitch" effect from pixels nearby edges having diminished offset colorations extending from the edges themselves. The result is a frame where a subject may look as if there are multiple frames stacked on top of each other, creating the intended glitch effect. However, this effect does not use randomization, so this shader was left as-is as a bonus shader,  helping to learn about making the final intended effect.
+    </p>
+        
+    <img src="assets/singlitch.gif">
+    <div class=caption>Fig 3. Shadertoy sample footage using Sin Wave Glitch Shader</div> 
+    <p>
+        This was another attempt at creating a glitch effect, this time using sin waves. The process calculates a "glitch amount" value calulated via a sum of sin values using each pixel's x and y uv values as inputs along with a similar offset strategy to the Mr. Negative shader. The result is several noticable sin waves offsetting the image in a unique rgb effect, but the pattern seemed to regular and thus not "glitchy" enough.
+    </p>
+
+    <img src="assets/glitch.gif">
+    <div class=caption>Fig 3. Shadertoy sample footage using Sin Wave Glitch Shader</div> 
+    <p>
+        This shader uses an existing shader made for creating a glitch effect on images, but adapts it so that it can present multiple frames in a video format. It calculates the edge intensity using a Sobel filter and uses this intensity to modulate the distortion, making glitches more prominent along edges. Additionally, it uses multiple samples found through a series of random offets, averaging the samples to produce each pixel's final value. Like with each of the shaders made in Shadertoy for this project, they read from memory often and fail to run in real time when used in After Effects (taking a couple miliseconds per frame). The code was exclusively tested in Shadertoy before being used on different footage from the provided sample videos outside of Shadertoy, so if this project was continued, we could optimize these shaders more effectively and avoid reading from as often.
     </p>
     </div>
 
+
+    
     <div class=block>
         <div class=subtitle id=#finalevaluation>Final Evaluation</div>
 
@@ -322,7 +318,9 @@
             <b>Graphics Engineer</b>: looks cool, would love to see more about the robustness.<br>
             <b>After Effects User #1</b>: really cool, can we ship some of these effects in After Effects as a plugin?<br>
             <b>After Effects User #2</b>: I love how quick and easy it is to pick up these effects. The beauty is in the parameteribility<br>
-
+            <b>2D Animator</b>: The effects were pretty interesting. I could see them being used for an abstract atmosphere around a given character. I could use these to make expressive character introductions.
+            <b>Artist</b>: I would use them when a character has vigorous motion, good job of highlighting sweepign motion. Style is very specific, so I wouldn't use these for much outside this aesthetic. It looks pretty cool.
+            <b>Indie Game Developer</b>: Jarring effect in a stylistically interesting way, matches the style of shows like Smiling Friends. This might feel out of place for anything smooth or grounded with hyper realistic goals like Pixar. They're pretty cool, I had fun checking these out.
         </p>
     </div>
 
