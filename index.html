@@ -126,6 +126,7 @@
     <a href=#experiments-paper-expand>Experiments [Paper Expand]</a>
     <a href=#smearing>Approach [Frame Smearing]</a>
     <a href=#dithering>Approach [Dithering]</a>
+    <a href=#rgb-glitch>Approach [RGB Glitch]</a>    
     <a href=#responsibilities>Responsibilities</a>
 
     </div>
@@ -270,10 +271,42 @@
     <div class=subtitle id=#dithering>Approach [Dithering]</div>
 
     <img src="assets/dither.gif">
-    <div class=caption>Fig 1. Introduction of Hobbes | Across the Spiderverse (2023)</div>
+    <div class=caption>Fig 1. Shadertoy sample footage using dithering shader</div>
 
     <p>
         The dithering script uses a fixed Bayer 3x3 matrix for each frame and off-colors each pixel region (currently each 3x3 pixel square in a frame through modulation) to create a dithering pattern. This process is memoryless and does not use previous frames to inform current frames. The severity of the coloring can be increased or decreased by modifying an levels variable which essentially alters the number of colors available for that region's palette, moving pixel colorations to the nearest available option after applying the dithering matrix. At a high levels value, the produced frames of the video become visually identical to the original, while low level values produce more distinguishable differentiated dithering regions.
+    </p>
+    </div>
+
+    <div class=block>
+        <div class=subtitle id=#finalevaluation>Final Evaluation</div>
+
+        <img src="assets/final.gif">
+        <div class=caption>Fig 1. Compositing all filters | Across the Spiderverse (2023)</div>
+
+        <p>
+            For the final evaluation, we felt that because this is a creative product, that it requires creative evaluation. We interviewed people in the animation industry, from students to graphics engineers to animators, on their thoughts when viewing our results. Some feedback we recieved:
+            <br><br>
+            <b>Graphics Engineer</b>: looks cool, would love to see more about the robustness.<br>
+            <b>After Effects User #1</b>: really cool, can we ship some of these effects in After Effects as a plugin?<br>
+            <b>After Effects User #2</b>: I love how quick and easy it is to pick up these effects. The beauty is in the parameteribility<br>
+
+        </p>
+    </div>
+
+
+
+
+    <div class=block>
+    <div class=subtitle id=#rgb-glitch>Approach [RGB Glitch]</div>
+
+    <img src="assets/negative.gif">
+    <div class=caption>Fig 1. Shadertoy sample footage using Mr. Negative Shader shader</div>
+    <img src="assets/rgbnegative.gif">
+    <div class=caption>Fig 2. Shadertoy sample footage using Mr. Negative Shader shader without grayscaling</div>
+        
+    <p>
+        When first working on the rgb glitch effect, the goal was to emulate the color offput present in spiderverse
     </p>
     </div>
 
