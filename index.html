@@ -126,6 +126,7 @@
     <a href=#experiments-paper-expand>Experiments [Paper Expand]</a>
     <a href=#smearing>Approach [Frame Smearing]</a>
     <a href=#blur>Approach [Directional Motion Blur]</a>
+    <a href=#experiments-blur>Experiments [Directional Motion Blur]</a>
     <a href=#dithering>Approach [Dithering]</a>
     <a href=#rgb-glitch>Approach [RGB Glitch]</a>    
     <a href=#responsibilities>Responsibilities</a>
@@ -243,8 +244,6 @@
         For one, the shader would need to keep track of the key features that are moving across frames. Then, we would need to extract those key features across a set of consecutive frames, and render them on the current frame. Given that we are limited to 2D footage, this task becomes challenging, as we have no access to 3D vertices that we can extract displacement information from. Moreover, since we can’t pass information between frames in the AE plugin, we decide not to obtain the smearing effect by extracting the moving features from following frames. 
     </p>
     
-    
-
     <img src="assets/frame_smear_videos/test_frame_smear_1.gif">
     <img src="assets/frame_smear_videos/test_frame_smear_1_dense.gif">
   
@@ -262,7 +261,7 @@
         cur_coord = ...; <cmt>// Get current pixel coordinates</cmt>
         vec4 color = (0,0,0,0);  <cmt>// To accumulate color from samples</cmt>
         if(velocity_mag &gt threshold){
-            for(i=0; i&ltn num_Samples; i++) {
+            for(i=0; i&ltnum_Samples; i++) {
                 <cmt>// Time is reciprocal of samples taken </cmt>
                 time = 1 / (num_Samples - 1); 
                 <cmt>// Get sample coordinate using equation of motion</cmt>
@@ -308,31 +307,113 @@
     <div class=block>
     <div class=subtitle id=#blur>Approach [Directional Motion Blur]</div>
 
-    <img src="assets/motion_blur_videos/spiderverse_blur_example.jpeg">
+    <img src="assets/motion_blur_videos/motion_blur_spiderverse_example.jpeg">
     <div class=caption>Fig 1. Motion Blur Example | Across the Spiderverse (2023)</div>
     <p>
         The directional motion blur plugin aims to create the stylistic Spiderverse blur, a comic-like blur that uses streaks of lines along the intended blur direction to accentuate motion. For this effect, we use two shader passes, one to produce blur in a specified direction and the other to draw randomly spaced red and black lines in this specified direction. The algorithm looks like the following: 
     </p>
+    <pre>
+        <cmt>/* First pass */ </cmt>
+        velocity_mag = ...; <cmt>// Vector magnitude and direction provided </cmt>
+        velocity_dir = ...; <cmt>// from parameter values</cmt>
+        cur_coord = ...; <cmt>// Get current pixel coordinates</cmt>
+        vec4 color = (0,0,0,0);  <cmt>// To accumulate color from samples</cmt>
+        for(i=0; i&ltnum_Samples; i++) {
+            time = 1 / (num_Samples - 1); 
+            <cmt>// Get sample coordinate using equation of motion</cmt>
+            sample_coord = current_coord * velocity_dir * scale * t; 
+            <cmt>// Obtain pixel value at sample_coord</cmt>
+            vec3 sample = texture(sample_coord); 
+            <cmt>// Average the color </cmt>
+            color += sample * (1/num_Samples); 
+        }
+        <cmt>/* Second pass */ </cmt>
+        num_Lines = ...; <cmt>// Number lines is parameterized value </cmt>
+        lineLength = ...; <cmt>// Line length is parameterized value </cmt>
+        lineWidth /= 50.0f; 
+        for (n = 0; n&ltnum_Lines; n++) {
+            <cmt>// Random coordinate for line starting point</cmt>
+            vec2 rand_coord = rand_number(); 
+            <cmt>// Random color</cmt>
+            float colorRand = rand_number();
+            vec2 dir = vec2(cos(dir), sin(dir))
+            vec2 proj_vec = cur_coord - rand_coord; 
+            <cmt>//Get projection of vector on line to get </cmt>
+            <cmt>//closest point on the line to current point </cmt>
+            float proj = clamp(dot(proj_vec, dir), 0, lineLength)
+            <cmt>//Find distance to the line.  </cmt>
+            <cmt>//If less than line thickness, color the line </cmt>
+            float dist = distance(cur_coord, rand_coord + proj * dir)
+            if (dist&ltlineThickness) {
+                if (colorRand > 0.5)
+                    color = red;
+                else 
+                    color = black;
+            }
+        }
+    </pre>
+    <div class=caption>Alg 1. Motion Blur Two-Pass Algorithm</div>
+    <img src="assets/motion_blur_videos/blur_ae_parameters.png">
+    <div class=caption>Fig 2. AE Parameter Sliders</div>
+    
     <p>
-        To achieve directional blur in the first pass, we perform averaging over a number of sample points, each point obtained by solving the following motion equation. *t. We parameterize the number of samples, scale of motion, the magnitude and velocity of the direction vector. Number of samples determines how many samples we average over to obtain the blur. Scale determines how spaced apart the blur lines are. Direction is parameterized in angle (0 to 360 degrees) which allows control over the direction of the blur. 
+        To achieve directional blur in the first pass, we perform averaging over a number of sample points, each point obtained by solving the following motion equation: (x_2, y_2) = (x_1, y_2) s * v * t, in a similar fashion to the frame smearing algorithm. We parameterize the number of samples, scale of motion, the magnitude and velocity of the direction vector. Number of samples determines how many samples we average over to obtain the blur. Scale determines how spaced apart the blur lines are. Direction is parameterized in angle (0 to 360 degrees) which allows control over the direction of the blur. 
     </p>
     <p>
         In the second pass, we generate a random set of lines to rasterize. To do so, we iterate over the total number of lines, and in each iteration we seed random numbers to randomize the starting position of the line and the color of the line (red or black). We then determine whether the current pixel is within the line by computing the closest point on the line to the current pixel (projection using dot product). If the distance from the current pixel to the closest point on the line is smaller than the line width, we color that pixel as red or black. To create random lines at each frame, we seed the random numbers using the frame time variable. We utilize the Mersenne Twister pseudo-random number generator from the C++ random library to obtain the random numbers. We also parameterize the number of lines, and line length using AE sliders. 
     </p>
     <p>
-        Of course, this second pass is extremely inefficient, given that we run two loops over every single pixel in each frame. We optimize this by combining both passes into one pass. We use one loop to perform both blurring and random line drawing. The combined loop is shown below. We benchmark performance of both algorithms testing a varying number of lines.   
-    </p>
-    <p>
-        Even with the optimization, this shader is still inefficient and not real time. A more obvious approach to this problem is probably not using a shader to generate lines (which performs pixel by pixel computations per frame) but rather using a simple rasterizer that just draws the lines on each frame. 
-    </p>
-    <p>
         Our directional blur shader is rudimentary. Some additional improvements we could expand our shader on include enabling a perspective 3D blur. For instance, if we have a subject that is moving towards the camera, the direction vectors from different parts of the frame will look different, hence we cannot use the uni-directional motion blur we made for this project. Another potential improvement is anti-aliasing the lines or adding more natural lines or soft contours, rather than a harsh line. A 2D gaussian splatting approach instead of line-drawing could be interesting to investigate and could create more natural looking streaks. Below is a gallery of our custom-tuned directional motion blur composites. 
+    </p>
+    <img src="assets/motion_blur_videos/test_motion_blur_1.gif">
+    <img src="assets/motion_blur_videos/motion_blur_1_after.gif">
+    <div class=caption>Res 1. Tom and Jerry (2022)</div>
+    <img src="assets/motion_blur_videos/test_motion_blur_2.gif">
+    <img src="assets/motion_blur_videos/motion_blur_2_after.gif">
+    <div class=caption>Res 2. Avatar the Last Airbender (2007)</div>
+    <img src="assets/motion_blur_videos/test_motion_blur_4.gif">
+    <img src="assets/motion_blur_videos/motion_blur_4_after.gif">
+    <div class=caption>Res 3. Spiderverse (2023)</div>
+    <img src="assets/motion_blur_videos/test_motion_blur_7.gif">
+    <img src="assets/motion_blur_videos/motion_blur_7_after.gif">
+    <div class=caption>Res 4. Real-life car race footage</div>
+
+    </div>
+
+    <div class=block>
+    <div class=subtitle id=experiments-blur>Experiments [Directional Motion Blur]</div>
+    <p>
+        Of course, our two-pass is extremely inefficient, given that we run two loops over every single pixel in each frame. We optimize this by combining both passes into one pass. We use one loop to perform both blurring and random line drawing. The combined loop algorithm is shown below. We benchmark performance of both algorithms testing a varying number of lines.   
+    </p>
+    <pre>
+        for(i=0; i&lt num_Samples; i++) {
+            if (n&lt num_Lines)
+            {
+                ... Second pass body ...
+                if (dist&ltlineThickness)
+                {
+                    color the line 
+                    break; 
+                }
+                n++
+            }
+            ... First pass body ...
+            average and accumulate color from samples
+        }
+    </pre>
+    <p>
+        By combining the loops, we significantly reduce the plugin runtime by a little over 50%. We benchmark the improvement in performance by running the plugin on the same video (Res 1. Tom and Jerry (2022)) while changing the number of lines drawn on top of the blur. Table 1 shows the trials run and improved runtime: 
+    </p>
+    <img src="assets/motion_blur_videos/benchmarking.png">
+    <div class=caption>Tab 1. Runtime comparison of Optimizing Motion Blur Plugin</div>
+    <p>
+        However, even with this optimization, the shader is still inefficient and does not run in real-time. A more obvious approach to this problem is probably not using a shader to generate lines (which performs pixel by pixel computations per frame) but rather using a simple rasterizer that just draws the lines on each frame. 
     </p>
     </div>
 
-
     
     <div class=block>
+    
     <div class=subtitle id=#dithering>Approach [Dithering]</div>
 
     <img src="assets/dither.gif">
@@ -386,7 +467,7 @@
             <b>2D Animator</b>: The effects were pretty interesting. I could see them being used for an abstract atmosphere around a given character. I could use these to make expressive character introductions. <br>
             <b>Artist</b>: I would use them when a character has vigorous motion, good job of highlighting sweepign motion. Style is very specific, so I wouldn't use these for much outside this aesthetic. It looks pretty cool. <br>
             <b>Indie Game Developer</b>: Jarring effect in a stylistically interesting way, matches the style of shows like Smiling Friends. This might feel out of place for anything smooth or grounded with hyper realistic goals like Pixar. They're pretty cool, I had fun checking these out. <br>
-        </p>
+            <b>Technical Artist for VR</b>: Concept of the shaders is great. The smear and blur filters are widely used (in fact AE has existing blur filters). The RGB glitch and papercut filters could be used for more avante garde applications. Overall, they capture the idea of Spiderverse pretty well. Compositors would love having parameters to tune. Good starting point, excited to see more embellishments. 
     </div>
 
 
