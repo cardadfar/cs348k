@@ -243,8 +243,11 @@
         For one, the shader would need to keep track of the key features that are moving across frames. Then, we would need to extract those key features across a set of consecutive frames, and render them on the current frame. Given that we are limited to 2D footage, this task becomes challenging, as we have no access to 3D vertices that we can extract displacement information from. Moreover, since we can’t pass information between frames in the AE plugin, we decide not to obtain the smearing effect by extracting the moving features from following frames. 
     </p>
     
+    
+
     <img src="assets/frame_smear_videos/test_frame_smear_1.gif">
     <img src="assets/frame_smear_videos/test_frame_smear_1_dense.gif">
+  
     <div class=caption>Fig 2. Optical Flow Map Example | Tom and Jerry (2022)</div>
 
     <p>
@@ -253,17 +256,54 @@
     <p>
         Next, we insert this generated optical flow map video as an additional layer in After Effects to be inputted into the plugin script (analogous to passing a second texture to the shader). The shader in the plugin script will determine the magnitude and direction of motion at any given pixel (given from the optical flow texture) and will subsequently perform an averaging of pixels in the magnitude and direction of motion. The algorithm looks like the following: 
     </p>
-    <img src="assets/frame_smear_videos/smear_algo.png">
+    <pre>
+        velocity_mag = getMagFromOpticalFlow(); <cmt>// Get vector magnitude and direction for </cmt>
+        velocity_dir = getDirFromOpticalFlow(); <cmt>// this pixel from optical flow map</cmt>
+        cur_coord = ...; <cmt>// Get current pixel coordinates</cmt>
+        vec4 color = (0,0,0,0);  <cmt>// To accumulate color from samples</cmt>
+        if(velocity_mag &gt threshold){
+            for(i=0; i&ltn num_Samples; i++) {
+                <cmt>// Time is reciprocal of samples taken </cmt>
+                time = 1 / (num_Samples - 1); 
+                <cmt>// Get sample coordinate using equation of motion</cmt>
+                sample_coord = current_coord * velocity_dir * scale * t; 
+                <cmt>// Obtain pixel value at sample_coord</cmt>
+                vec3 sample = texture(sample_coord); 
+                <cmt>// Average the color </cmt>
+                color += sample * (1/num_Samples); 
+            }
+        }
+        else 
+        {
+            color = texture(cur_coord); 
+        }
+    </pre>
+    <div class=caption>Alg 1. Frame Smear Loop</div>
     <img src="assets/frame_smear_videos/smear_ae_parameters.png">
-    <div class=caption>Fig 2. Algorithm and AE Parameter Sliders</div>
+    <div class=caption>Fig 3. AE Parameter Sliders</div>
         
     <p>
         Given a pixel's velocity vector's magnitude (derived from optical flow map) is over a threshold constant, we perform averaging over a number of sample points, each point obtained by solving the equation of motion: (x_2, y_2) = (x_1, y_2) s * v * t, where s denotes the scale parameter, v denotes the direction vector obtained from the optical flow map, and t denotes the reciprocal of the number of samples. We parameterize the scale of motion, number of samples, and velocity threshold into AE sliders such that compositors can easily change and tune the effect to their liking. Number of samples determines how many times we observe the smear lines. Scale determines how spaced apart the smear lines are. Threshold determines over which minimum velocity should smear lines be rendered. For instance, setting threshold at 1 would produce no motion blur, while setting threshold to 0 would produce all motion blur as indicated by the optical flow texture. 
     </p>
+    <img src="assets/frame_smear_videos/spiderverse_smear_example.jpeg">
+    <div class=caption>Fig 4. Smear Lines Visualization | Spiderverse (2023)</div>
+
     <p>
         Fortunately, this shader algorithm runs in real-time and responds instantly to changes in parameterization (for which we cap each parameter at a fixed range for real-time performance), which is what we aim for. This way, artists can preview their composites as soon as they add the effect. We also demonstrate that this plugin can be used over any footage, animation or real-world. Below is a gallery of our carefully-tuned frame smear composites. As motion in Spiderverse is animated every other frame, the Spiderverse footage composites yielded very visually interesting results, namely this “popping” effect when the smear is activated every other frame.  
     </p>
+    
+    <img src="assets/frame_smear_videos/test_frame_smear_1.gif">
+    <img src="assets/frame_smear_videos/frame_smear_1_after.gif">
+    <div class=caption>Res 1. Tom and Jerry (2022)</div>
+    <img src="assets/frame_smear_videos/test_frame_smear_2.gif">
+    <img src="assets/frame_smear_videos/frame_smear_2_after.gif">
+    <div class=caption>Res 2. Steamboat Willie (1928)</div>
+    <img src="assets/frame_smear_videos/test_frame_smear_4.gif">
+    <img src="assets/frame_smear_videos/frame_smear_4_after.gif">
+    <div class=caption>Res 3. Spiderverse (2023)</div>
+
     </div>
+
 
     <div class=block>
     <div class=subtitle id=#blur>Approach [Directional Motion Blur]</div>
