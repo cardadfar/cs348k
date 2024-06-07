@@ -198,9 +198,6 @@ MySimpleGainFunc8 (
     PF_FpLong magnitudeValue = giP->magnitudeF;
     PF_FpLong directionValue = giP->directionF;
     
-    PF_FpLong numLinesValue = giP->numLinesF;
-    PF_FpLong lineLengthValue = giP->lineLengthF;
-    
     const float blurScale = static_cast<float>(scaleValue);
     const float samples = static_cast<float>(gainValue);
     
@@ -215,74 +212,28 @@ MySimpleGainFunc8 (
     float blue = 0;
     float alpha = 0;
     
-
-    float numLines = static_cast<float>(numLinesValue);
-    float lineLength = static_cast<float>(lineLengthValue);
-    float lineThickness = lineLength / 50.0f;
-
-    float cos_dir = cos(dir / 180.0f * PI);
-    float sin_dir = sin(dir / 180.0f * PI);
-    
-    float xCur = static_cast<float>(xL) / layer.width;
-    float yCur = static_cast<float>(yL) / layer.height;
-    
-    std::mt19937 gen(static_cast<unsigned>(giP->frameSeed));
-    std::uniform_int_distribution<> dis(1, 50);
-    
-    
-    float n = 0;
-    
     // sample scene texture along direction of motion
     for(float i=0; i<samples; i++) {
+            float t = i / (samples-1);
             
-        if (n < numLines)
-        {
-            float xRand = static_cast<float>(dis(gen)) / 50.0f;
-            float yRand = static_cast<float>(dis(gen)) / 50.0f;
-            float colorRand = static_cast<float>(dis(gen)) / 50.0f;
+            A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
+            A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
             
-            float vec1_x = xCur - xRand;
-            float vec1_y = yCur - yRand;
+            A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
+            A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
             
-            float proj = std::min(std::max(0.0f, vec1_x * cos_dir + vec1_y * sin_dir), lineLength);
+            PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
             
-            float dist_squared = (xCur - (xRand + proj * cos_dir)) * (xCur - (xRand + proj * cos_dir)) +
-            (yCur - (yRand + proj * sin_dir)) * (yCur - (yRand + proj * sin_dir));
+            red += (static_cast<float>(samp->red) / 255.0f);
+            blue += (static_cast<float>(samp->blue) / 255.0f);
+            green += (static_cast<float>(samp->green) / 255.0f);
+            alpha += (static_cast<float>(samp->alpha) / 255.0f);
             
-            if (dist_squared < lineThickness * lineThickness) {
-                alpha = 1.0f;
-                red = 0.0f;
-                blue = 0.0f;
-                green = 0.0f;
-                
-                if (colorRand > 0.5)
-                    red = 1.0f;
-                
-                break;
-            }
-            
-        }
-        float t = i / (samples-1);
-                
-        A_long x_offset = static_cast<A_long>(floor(x_velocity*blurScale*t*layer.width));
-        A_long y_offset = static_cast<A_long>(floor(y_velocity*blurScale*t*layer.height));
-        
-        A_long coord_x = std::min(std::max(0, xL + x_offset),layer.width-1);
-        A_long coord_y = std::min(std::max(0, yL + y_offset),layer.height-1);
-        
-        PF_Pixel8 *samp = (PF_Pixel*)((char*)(layer).data + (coord_y * (layer).rowbytes) + (coord_x * sizeof(PF_Pixel)));
-        
-        red += (static_cast<float>(samp->red) / 255.0f) * (1.0f/samples);
-        blue += (static_cast<float>(samp->blue) / 255.0f) * (1.0f/samples);
-        green += (static_cast<float>(samp->green) / 255.0f) * (1.0f/samples);
-        alpha += (static_cast<float>(samp->alpha) / 255.0f) * (1.0f/samples);
-        n++;
-        
     }
-    /*red/= samples;
+    red/= samples;
     blue/= samples;
     green/= samples;
-    alpha/=samples;*/
+    alpha/=samples;
     
     outP->alpha = static_cast<A_u_char>(std::min((alpha * 255.0), 255.0)); //p->alpha;
     outP->red = static_cast<A_u_char>(std::min((red * 255.0), 255.0));
@@ -419,14 +370,14 @@ Render (
     
     giP.checkout   = checkout;
 	
-    /*PF_EffectWorld first_pass_world;
+    PF_EffectWorld first_pass_world;
     AEFX_CLR_STRUCT(first_pass_world);
     
     PF_NewWorldFlags flags = PF_NewWorldFlag_CLEAR_PIXELS;
     ERR(suites.WorldSuite1()->new_world(in_data->effect_ref, output->width, output->height, flags, &first_pass_world));
     
     if (!err)
-    {*/
+    {
         ERR(suites.Iterate8Suite2()->iterate(	in_data,
                                              0,								// progress base
                                              linesL,							// progress final
@@ -434,10 +385,10 @@ Render (
                                              NULL,							// area - null for all pixels
                                              (void*)&giP,					// refcon - your custom data pointer
                                              MySimpleGainFunc8,				// pixel function pointer
-                                             output));
+                                             &first_pass_world));
         
 
-        /*ERR(suites.Iterate8Suite2()->iterate(    in_data,
+        ERR(suites.Iterate8Suite2()->iterate(    in_data,
                                              0,                                // progress base
                                              linesL,                            // progress final
                                              &first_pass_world,    // src
@@ -446,7 +397,7 @@ Render (
                                              MySecondPassFunc8,                // pixel function pointer
                                              output));
         ERR(suites.WorldSuite1()->dispose_world(in_data->effect_ref, &first_pass_world));
-    }*/
+    }
     return err;
 }
 
